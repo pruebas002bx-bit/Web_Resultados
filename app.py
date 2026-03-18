@@ -16,11 +16,11 @@ if db_url.startswith("postgres://"):
 elif db_url.startswith("postgresql://") and "pg8000" not in db_url:
     db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
 
-# 2. LIMPIEZA ABSOLUTA: Cortar cualquier parámetro extra (?sslmode=require)
+# 2. Limpieza de parámetros
 if "?" in db_url:
     db_url = db_url.split("?")[0]
 
-# 3. Forzar el contexto SSL nativo de Python que exige Aiven
+# 3. Configuración SSL para Aiven
 if "pg8000" in db_url:
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
@@ -32,20 +32,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Modelo de Base de Datos
+# --- MODELO ACTUALIZADO CON NUEVAS COLUMNAS ---
 class ScoreRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sim_id = db.Column(db.String(100), nullable=False)
     shooter_name = db.Column(db.String(100), nullable=False)
+    shooter_id = db.Column(db.String(50), nullable=True) # Nueva Columna
+    group_name = db.Column(db.String(100), nullable=True) # Nueva Columna
     scenario = db.Column(db.String(100), nullable=False)
     score = db.Column(db.Integer, nullable=False)
     timestamp = db.Column(db.String(50), nullable=False)
 
-# Crear tablas si no existen
 with app.app_context():
     db.create_all()
 
-# Endpoint (API) para recibir datos desde Alpha.py
+# --- API ACTUALIZADA ---
 @app.route('/api/upload_score', methods=['POST'])
 def upload_score():
     try:
@@ -53,22 +54,21 @@ def upload_score():
         new_record = ScoreRecord(
             sim_id=data.get('sim_id', 'DESCONOCIDO'),
             shooter_name=data.get('shooter_name', 'Tirador'),
+            shooter_id=data.get('shooter_id', 'N/D'), # Recibir Cédula
+            group_name=data.get('group_name', 'NINGUNO'), # Recibir Grupo
             scenario=data.get('scenario', 'Escenario'),
             score=int(data.get('score', 0)),
             timestamp=data.get('timestamp', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         )
         db.session.add(new_record)
         db.session.commit()
-        return jsonify({"status": "success", "message": "Record saved"}), 200
+        return jsonify({"status": "success"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# Ruta principal que muestra el archivo HTML
 @app.route('/')
 def dashboard():
-    # Obtener los últimos 100 registros, ordenados del más reciente al más antiguo
-    records = ScoreRecord.query.order_by(ScoreRecord.id.desc()).limit(100).all()
-    # Pasa la variable 'records' al archivo dashboard.html dentro de la carpeta 'templates'
+    records = ScoreRecord.query.order_by(ScoreRecord.id.desc()).limit(200).all()
     return render_template('dashboard.html', records=records)
 
 if __name__ == '__main__':
