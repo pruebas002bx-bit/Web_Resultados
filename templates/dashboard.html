@@ -180,6 +180,9 @@
             <button class="btn-nav btn-pdf" id="btnOpenPdf">
                 <i data-lucide="file-text"></i> Generar PDF
             </button>
+            <button class="btn-nav" id="btnDownloadExcel" style="background: #059669;">
+                <i data-lucide="file-spreadsheet"></i> Descargar Excel
+            </button>
             {% endif %}
 
             {% if role == 'admin' %}
@@ -645,6 +648,24 @@
                     console.error("Error al procesar gráficas:", e);
                 }
             }
+
+
+
+
+            // Descargar Excel General
+            const btnDownloadExcel = document.getElementById('btnDownloadExcel');
+            if(btnDownloadExcel) {
+                btnDownloadExcel.addEventListener('click', () => {
+                    window.location.href = '/download_excel';
+                });
+            }
+
+
+
+
+
+
+
 
             // ================== INICIALIZAR CALENDARIO (FULLCALENDAR) ==================
             const calendarEl = document.getElementById('calendar');

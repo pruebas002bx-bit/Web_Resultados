@@ -529,6 +529,45 @@ def generate_pdf():
     )
 
 
+@app.route('/download_excel')
+@login_required
+def download_excel():
+    import csv
+    if session['role'] != 'partner': return "Acceso Denegado", 403
+    
+    filter_val = session.get('filter_val', '').strip()
+    records = ScoreRecord.query.filter(
+        func.lower(ScoreRecord.group_name) == func.lower(filter_val)
+    ).order_by(ScoreRecord.id.desc()).all()
+
+    def generate():
+        # Crear un buffer en memoria
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        
+        # Escribir BOM para que Excel reconozca caracteres especiales (tildes/ñ)
+        output.write('\ufeff')
+        
+        # Encabezados
+        writer.writerow(['FECHA/HORA', 'ESTACION', 'NOMBRE TIRADOR', 'ID TIRADOR', 'ESCENARIO', 'PUNTAJE', 'GRUPO'])
+        
+        for r in records:
+            writer.writerow([r.timestamp, r.sim_id, r.shooter_name, r.shooter_id, r.scenario, r.score, r.group_name])
+            yield output.getvalue()
+            output.truncate(0)
+            output.seek(0)
+
+    response = make_response(app.response_class(generate(), mimetype='text/csv'))
+    response.headers["Content-Disposition"] = f"attachment; filename=Reporte_General_{filter_val}.csv"
+    return response
+
+
+
+
+
+
+
+
 @app.route('/api/upload_score', methods=['POST'])
 def upload_score():
     from datetime import timedelta
