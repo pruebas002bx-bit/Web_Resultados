@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: letter; margin: 0.5cm; }
+        body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; line-height: 1.4; }
+        
+        /* Colores */
+        .text-red { color: #B91C1C; }
+        .bg-red { background-color: #B91C1C; }
+        .bg-black { background-color: #000000; }
+        
+        /* Header Táctico */
+        .header-table { width: 100%; border-bottom: 5pt solid #000; margin-bottom: 20px; }
+        .logo { width: 140px; }
+        .header-info { text-align: right; }
+        .report-title { font-size: 22pt; font-weight: bold; margin: 0; letter-spacing: -1px; }
+        .confidential { color: #B91C1C; font-size: 9pt; font-weight: bold; letter-spacing: 2px; }
+
+        /* Tarjetas de Estadísticas */
+        .stats-container { width: 100%; margin-bottom: 25px; }
+        .stat-card { border: 1pt solid #e5e7eb; padding: 10px; background-color: #f9fafb; text-align: center; }
+        .stat-label { font-size: 7pt; font-weight: bold; color: #6b7280; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-val { font-size: 14pt; font-weight: bold; color: #000; }
+
+        /* Gráfica */
+        .chart-box { width: 100%; text-align: center; margin: 20px 0; border: 1pt solid #eee; padding: 15px; border-radius: 10px; }
+        .section-header { background-color: #000; color: #fff; padding: 6px 12px; font-size: 10pt; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+
+        /* Tabla de Resultados */
+        .results-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .results-table th { background-color: #f3f4f6; color: #000; padding: 10px; font-size: 8pt; text-transform: uppercase; border-bottom: 2pt solid #B91C1C; }
+        .results-table td { padding: 8px; font-size: 9pt; border-bottom: 0.5pt solid #e5e7eb; text-align: center; font-weight: bold; }
+        .results-table tr.high-row { background-color: #fef2f2; }
+
+        /* Footer / Firmas */
+        .footer-sig { margin-top: 50px; width: 100%; }
+        .sig-line { border-top: 1.5pt solid #000; width: 80%; margin: 0 auto; margin-top: 40px; }
+        .sig-text { font-size: 9pt; font-weight: bold; margin-top: 5px; }
+        
+        .watermark { position: absolute; top: 40%; left: 20%; font-size: 80pt; color: rgba(0,0,0,0.03); transform: rotate(-45deg); z-index: -1; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="watermark">ALPHA SYSTEM</div>
+
+    <table class="header-table">
+        <tr>
+            <td width="30%"><img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" class="logo"></td>
+            <td class="header-info">
+                <div class="confidential">DOCUMENTO OFICIAL DE EVALUACIÓN</div>
+                <h1 class="report-title">EXPEDIENTE DEL TIRADOR</h1>
+                <div style="font-size: 9pt; font-weight: bold;">GENERADO: {{ stats.date_gen }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-header">Resumen Ejecutivo y Telemetría</div>
+    
+    <table class="stats-container" cellspacing="5">
+        <tr>
+            <td class="stat-card" width="25%">
+                <div class="stat-label">Identificación</div>
+                <div class="stat-val">{{ stats.id }}</div>
+            </td>
+            <td class="stat-card" width="25%">
+                <div class="stat-label">Operador</div>
+                <div class="stat-val">{{ stats.shooter }}</div>
+            </td>
+            <td class="stat-card" width="25%">
+                <div class="stat-label">Unidad / Grupo</div>
+                <div class="stat-val">{{ stats.group }}</div>
+            </td>
+            <td class="stat-card" width="25%">
+                <div class="stat-label">Periodo</div>
+                <div style="font-size: 9pt; font-weight: bold;">{{ stats.period }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td class="stat-card">
+                <div class="stat-label">Puntaje Máximo</div>
+                <div class="stat-val" style="color: #B91C1C;">{{ stats.max }}</div>
+            </td>
+            <td class="stat-card">
+                <div class="stat-label">Puntaje Mínimo</div>
+                <div class="stat-val">{{ stats.min }}</div>
+            </td>
+            <td class="stat-card">
+                <div class="stat-label">Promedio</div>
+                <div class="stat-val">{{ stats.avg }}%</div>
+            </td>
+            <td class="stat-card">
+                <div class="stat-label">Sesiones</div>
+                <div class="stat-val">{{ stats.count }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-header">Análisis de Progreso (Curva de Desempeño)</div>
+    <div class="chart-box">
+        <img src="{{ stats.chart_url }}" style="width: 100%;">
+        <div style="font-size: 7pt; color: #666; margin-top: 5px;">* Eje Y: Puntos obtenidos | Eje X: Sesiones consecutivas</div>
+    </div>
+
+    <div class="section-header">Desglose Detallado de Sesiones</div>
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th width="25%">Fecha y Hora</th>
+                <th width="35%">Escenario Ejecutado</th>
+                <th width="20%">Estación</th>
+                <th width="20%">Resultado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr {% if r.score >= 90 %}class="high-row"{% endif %}>
+                <td>{{ r.timestamp }}</td>
+                <td>{{ r.scenario | upper }}</td>
+                <td>{{ r.sim_id }}</td>
+                <td style="font-size: 11pt; color: {% if r.score >= 90 %}#B91C1C{% else %}#000{% endif %};">
+                    {{ r.score }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="footer-sig">
+        <tr>
+            <td width="45%" style="text-align: center;">
+                <div class="sig-line"></div>
+                <div class="sig-text">FIRMA DEL TIRADOR EVALUADO</div>
+                <div style="font-size: 8pt;">ID: {{ stats.id }}</div>
+            </td>
+            <td width="10%"></td>
+            <td width="45%" style="text-align: center;">
+                <div class="sig-line"></div>
+                <div class="sig-text">CERTIFICACIÓN INSTRUCTOR / GRUPO</div>
+                <div style="font-size: 8pt; text-transform: uppercase;">{{ stats.group }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div style="position: absolute; bottom: 0; width: 100%; text-align: center; font-size: 7pt; color: #999; border-top: 0.5pt solid #eee; padding-top: 5px;">
+        Este reporte es un documento generado automáticamente por el Sistema Alpha Cloud. La alteración de estos datos constituye una violación a los protocolos de entrenamiento.
+    </div>
+</body>
+</html>

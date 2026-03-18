@@ -1,10 +1,13 @@
 import os
 import ssl
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
 from functools import wraps
+from io import BytesIO
+from xhtml2pdf import pisa
+from sqlalchemy import func
 
 app = Flask(__name__)
 app.secret_key = "alpha_tactical_ultra_secret"
@@ -106,13 +109,64 @@ def register_user():
 def dashboard():
     role = session['role']
     query = ScoreRecord.query
+    unique_shooters = []
+    
     if role == 'partner':
-        records = query.filter_by(group_name=session['filter_val']).all()
+        records = query.filter_by(group_name=session['filter_val']).order_by(ScoreRecord.id.desc()).all()
+        # Obtener lista única de tiradores para el PDF
+        unique_shooters = db.session.query(ScoreRecord.shooter_id, ScoreRecord.shooter_name)\
+            .filter_by(group_name=session['filter_val'])\
+            .distinct(ScoreRecord.shooter_id).all()
     elif role == 'membresia':
-        records = query.filter_by(shooter_id=session['filter_val']).all()
+        records = query.filter_by(shooter_id=session['filter_val']).order_by(ScoreRecord.id.desc()).all()
     else:
         records = query.order_by(ScoreRecord.id.desc()).all()
-    return render_template('dashboard.html', records=records, role=role, username=session['username'])
+        
+    return render_template('dashboard.html', records=records, role=role, 
+                           username=session['username'], shooters=unique_shooters)
+
+@app.route('/generate_pdf')
+@login_required
+def generate_pdf():
+    if session['role'] != 'partner': return "Acceso Denegado", 403
+    
+    s_id = request.args.get('id')
+    d_from = request.args.get('from')
+    d_to = request.args.get('to')
+    
+    query = ScoreRecord.query.filter_by(group_name=session['filter_val'], shooter_id=s_id)
+    if d_from: query = query.filter(ScoreRecord.timestamp >= d_from)
+    if d_to: query = query.filter(ScoreRecord.timestamp <= d_to + " 23:59:59")
+    
+    records = query.order_by(ScoreRecord.timestamp.asc()).all()
+    if not records: return "No se encontraron registros", 404
+
+    # --- PROCESAMIENTO PARA GRÁFICA ---
+    scores = [r.score for r in records]
+    # Creamos una cadena de texto de los puntajes para la URL de Google Charts
+    scores_str = ",".join(map(str, scores))
+    
+    stats = {
+        "count": len(records),
+        "max": max(scores),
+        "min": min(scores),
+        "avg": round(sum(scores)/len(scores), 2),
+        "shooter": records[0].shooter_name,
+        "id": s_id,
+        "group": session['filter_val'],
+        "date_gen": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "period": f"{d_from} a {d_to}" if d_from and d_to else "HISTORIAL COMPLETO",
+        "chart_url": f"https://chart.googleapis.com/chart?cht=lc&chs=700x200&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5"
+    }
+
+    rendered = render_template('pdf_template.html', records=records, stats=stats)
+    pdf = BytesIO()
+    pisa.CreatePDF(BytesIO(rendered.encode("UTF-8")), dest=pdf)
+    
+    response = make_response(pdf.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=REPORT_TACTICAL_{s_id}.pdf'
+    return response
 
 @app.route('/api/upload_score', methods=['POST'])
 def upload_score():
