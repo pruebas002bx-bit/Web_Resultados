@@ -108,16 +108,17 @@ def register_user():
         print(f"Error registrando usuario: {e}")
         return jsonify({"status": "error"}), 400
 
+
 @app.route('/')
 @login_required
 def dashboard():
     role = session['role']
     query = ScoreRecord.query
     unique_shooters = []
+    partners = []
     
     if role == 'partner':
         records = query.filter_by(group_name=session['filter_val']).order_by(ScoreRecord.id.desc()).all()
-        # Obtener lista única de tiradores para el PDF
         unique_shooters = db.session.query(ScoreRecord.shooter_id, ScoreRecord.shooter_name)\
             .filter_by(group_name=session['filter_val'])\
             .distinct(ScoreRecord.shooter_id).all()
@@ -125,9 +126,32 @@ def dashboard():
         records = query.filter_by(shooter_id=session['filter_val']).order_by(ScoreRecord.id.desc()).all()
     else:
         records = query.order_by(ScoreRecord.id.desc()).all()
+        # Cargamos los partners para que el admin pueda editarlos
+        partners = User.query.filter_by(role='partner').all() 
         
     return render_template('dashboard.html', records=records, role=role, 
-                           username=session['username'], shooters=unique_shooters)
+                           username=session['username'], shooters=unique_shooters, partners=partners)
+
+@app.route('/edit_partner', methods=['POST'])
+@login_required
+def edit_partner():
+    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
+    data = request.json
+    try:
+        partner = User.query.filter_by(id=data['user_id'], role='partner').first()
+        if partner:
+            # Si el campo tiene texto, se actualiza. Si viene vacío, se ignora.
+            if data.get('password'): partner.password = data['password']
+            if data.get('location'): partner.location = data['location']
+            if data.get('group_name'): partner.group_name = data['group_name']
+            if data.get('logo_url'): partner.logo_url = data['logo_url']
+            db.session.commit()
+            return jsonify({"status": "success"})
+        return jsonify({"status": "error"}), 404
+    except Exception as e: 
+        print(f"Error editando partner: {e}")
+        return jsonify({"status": "error"}), 500
+
 
 @app.route('/generate_pdf')
 @login_required
