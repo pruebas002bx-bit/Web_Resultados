@@ -7,10 +7,13 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# Configuración de Aiven PostgreSQL (Se lee desde las variables de entorno de Render)
-# Si no hay variable (ej. probando localmente), usa SQLite como respaldo
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///local_fallback.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# app.py
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///local_fallback.db')
+
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
 db = SQLAlchemy(app)
 
