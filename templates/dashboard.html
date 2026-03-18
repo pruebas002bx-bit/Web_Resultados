@@ -35,10 +35,26 @@
         .login-card h2 { font-weight: 900; letter-spacing: -1px; margin-bottom: 30px; text-transform: uppercase; }
 
         .login-ad {
-            flex: 0 0 20%; max-width: 350px; min-width: 160px; height: 100vh; background: rgba(0,0,0,0.8);
-            display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+            flex: 0 0 20%;
+            max-width: 350px;
+            min-width: 160px;
+            height: 100vh;
+            /* Fondo transparente para que la imagen flote sobre el fondo de pantalla */
+            background: transparent; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
-        .login-ad img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .login-ad img {
+            width: 100%;
+            height: 100%;
+            /* 'contain' asegura que la imagen se vea completa sin recortes */
+            object-fit: contain; 
+            /* Opcional: un ligero sombreado para dar profundidad */
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); 
+        }
 
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; font-size: 11px; font-weight: 800; color: #555; margin-bottom: 5px; text-transform: uppercase; }
