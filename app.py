@@ -402,7 +402,7 @@ def generate_pdf():
             self.set_y(-12)
             self.set_font('helvetica', 'I', 7)
             self.set_text_color(128, 128, 128)
-            self.cell(0, 4, f'Generado por Alpha Cloud Systems | Pagina {self.page_no()}', align='C')
+            self.cell(0, 4, f'Generado por Alpha Systems | Pagina {self.page_no()}', align='C')
 
     pdf = TacticPDF()
     pdf.add_page()
