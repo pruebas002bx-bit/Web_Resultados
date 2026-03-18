@@ -320,18 +320,20 @@
             function runFilters() {
                 const dFrom = document.getElementById('dateFrom').value; // YYYY-MM-DD
                 const dTo = document.getElementById('dateTo').value;     // YYYY-MM-DD
-                const sID = document.getElementById('searchID').value.toLowerCase();
+                const sID = document.getElementById('searchID').value.trim().toLowerCase();
                 const sStation = document.getElementById('searchStation').value.toLowerCase();
                 const sScenario = document.getElementById('searchScenario').value.toLowerCase();
 
                 document.querySelectorAll('.data-row').forEach(row => {
-                    // Procesar Fecha de la Tabla: "DD/MM/YYYY HH:MM:SS" -> "YYYY-MM-DD"
-                    const rawDate = row.cells[0].textContent.split(' ')[0]; 
-                    const [day, month, year] = rawDate.split('/');
-                    const tableDate = `${year}-${month}-${day}`;
+                    // Limpiamos espacios y obtenemos la fecha pura: "18/03/2026"
+                    const rawDate = row.cells[0].textContent.trim().split(' ')[0]; 
+                    const parts = rawDate.split('/');
+                    
+                    // Convertimos "18/03/2026" a "2026-03-18" para comparar con el calendario
+                    const tableDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
 
                     const matchDate = (!dFrom || tableDate >= dFrom) && (!dTo || tableDate <= dTo);
-                    const matchID = row.cells[3].textContent.toLowerCase().includes(sID);
+                    const matchID = row.cells[3].textContent.trim().toLowerCase().includes(sID);
                     const matchStat = row.cells[1].textContent.toLowerCase().includes(sStation);
                     const matchScen = row.cells[5].textContent.toLowerCase().includes(sScenario);
 

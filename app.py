@@ -132,45 +132,48 @@ def generate_pdf():
     if session['role'] != 'partner': return "Acceso Denegado", 403
     
     s_id = request.args.get('id', '').strip()
-    d_from = request.args.get('from', '').strip() # Recibe YYYY-MM-DD
-    d_to = request.args.get('to', '').strip()
+    d_from_str = request.args.get('from', '').strip() # Viene YYYY-MM-DD
+    d_to_str = request.args.get('to', '').strip()     # Viene YYYY-MM-DD
     filter_val = session.get('filter_val', '').strip()
     
-    # --- CORRECCIÓN DE FORMATO DE FECHA PARA BÚSQUEDA ---
-    # Convertimos YYYY-MM-DD a DD/MM/YYYY para coincidir con tu BD
-    search_from = datetime.strptime(d_from, '%Y-%m-%d').strftime('%d/%m/%Y') if d_from else ""
-    search_to = datetime.strptime(d_to, '%Y-%m-%d').strftime('%d/%m/%Y') if d_to else ""
-
-    query = ScoreRecord.query.filter(
+    # 1. Traemos todos los registros del tirador para este partner
+    all_records = ScoreRecord.query.filter(
         func.lower(ScoreRecord.group_name) == func.lower(filter_val),
         ScoreRecord.shooter_id == s_id
-    )
+    ).all()
     
-    # Filtro por texto de fecha (almacenado como string)
-    if search_from:
-        query = query.filter(ScoreRecord.timestamp >= f"{search_from} 00:00:00")
-    if search_to:
-        query = query.filter(ScoreRecord.timestamp <= f"{search_to} 23:59:59")
-    
-    records = query.order_by(ScoreRecord.timestamp.asc()).all()
-    
+    # 2. Filtrado Lógico de Fechas en Python (Más seguro para formato DD/MM/YYYY)
+    records = []
+    try:
+        limit_from = datetime.strptime(d_from_str, '%Y-%m-%d') if d_from_str else None
+        limit_to = datetime.strptime(d_to_str, '%Y-%m-%d') if d_to_str else None
+        
+        for r in all_records:
+            # Extraer solo la fecha del timestamp "18/03/2026 02:45:10"
+            r_date_str = r.timestamp.split(' ')[0]
+            r_date = datetime.strptime(r_date_str, '%d/%m/%Y')
+            
+            if limit_from and r_date < limit_from: continue
+            if limit_to and r_date > limit_to: continue
+            records.append(r)
+    except Exception as e:
+        print(f"Error procesando fechas: {e}")
+
     if not records:
-        return f"Error: No hay datos para el ID {s_id} en las fechas seleccionadas.", 404
+        return f"No hay datos para el ID {s_id} en el rango seleccionado.", 404
 
     class TacticPDF(FPDF):
         def header(self):
-            # No descargar imagen en vivo para evitar Error 502
             self.set_fill_color(185, 28, 28)
             self.rect(0, 0, 215, 30, 'F')
             self.set_font('helvetica', 'B', 20)
             self.set_text_color(255, 255, 255)
-            self.cell(0, 15, 'EXPEDIENTE TÁCTICO ALPHA', align='C', ln=True)
+            self.cell(0, 15, 'EXPEDIENTE TACTICO ALPHA', align='C', ln=True)
             self.ln(10)
 
     pdf = TacticPDF()
     pdf.add_page()
     
-    # Datos del Tirador
     pdf.set_text_color(0, 0, 0)
     pdf.set_font('helvetica', 'B', 12)
     pdf.cell(190, 10, f" OPERADOR: {records[0].shooter_name.upper()}", ln=True, border='B')
@@ -179,24 +182,24 @@ def generate_pdf():
     pdf.ln(5)
     scores = [r.score for r in records]
     
-    pdf.cell(95, 8, f"Identificación: {s_id}")
+    pdf.cell(95, 8, f"Identificacion: {s_id}")
     pdf.cell(95, 8, f"Grupo: {filter_val.upper()}", ln=True)
-    pdf.cell(95, 8, f"Puntaje Máximo: {max(scores)}")
+    pdf.cell(95, 8, f"Puntaje Maximo: {max(scores)}")
     pdf.cell(95, 8, f"Promedio: {sum(scores)/len(scores):.2f}%", ln=True)
     
-    # Tabla de Resultados
     pdf.ln(10)
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
+    pdf.set_font('helvetica', 'B', 10)
     pdf.cell(50, 10, 'FECHA', fill=True, align='C')
     pdf.cell(75, 10, 'ESCENARIO', fill=True, align='C')
-    pdf.cell(35, 10, 'ESTACIÓN', fill=True, align='C')
+    pdf.cell(35, 10, 'ESTACION', fill=True, align='C')
     pdf.cell(30, 10, 'PUNTAJE', fill=True, align='C', ln=True)
     
     pdf.set_text_color(0, 0, 0)
     pdf.set_font('helvetica', '', 9)
     for r in records:
-        pdf.cell(50, 8, r.timestamp, border='B', align='C')
+        pdf.cell(50, 8, r.timestamp.split(' ')[0], border='B', align='C')
         pdf.cell(75, 8, r.scenario[:28].upper(), border='B', align='C')
         pdf.cell(35, 8, r.sim_id[:15], border='B', align='C')
         pdf.cell(30, 8, str(r.score), border='B', align='C', ln=True)
@@ -207,7 +210,10 @@ def generate_pdf():
     pdf.cell(95, 5, 'FIRMA DEL TIRADOR', align='C')
     pdf.cell(95, 5, 'FIRMA INSTRUCTOR', align='C')
 
-    response = make_response(pdf.output())
+    # CRITICO: Convertir bytearray a bytes para evitar el TypeError y el 502
+    pdf_output = bytes(pdf.output())
+    
+    response = make_response(pdf_output)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename=Reporte_{s_id}.pdf'
     return response
