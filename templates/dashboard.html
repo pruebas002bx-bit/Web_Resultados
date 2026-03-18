@@ -3,74 +3,118 @@
 <head>
     <meta charset='UTF-8'>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comando Central - Alpha Cloud</title>
+    <title>ALPHA CLOUD - Tactical Control</title>
     <style>
         :root {
-            --bg-main: #F3F4F6;
-            --bg-card: #FFFFFF;
-            --primary-red: #B91C1C;
-            --primary-black: #000000;
-            --text-black: #000000;
-            --border-color: #D1D5DB;
+            --primary: #B91C1C;
+            --dark: #000000;
+            --light: #FFFFFF;
+            --gray: #F3F4F6;
+            --border: #D1D5DB;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-main); color: var(--text-black); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--gray); color: var(--dark); overflow-x: hidden; }
 
-        .navbar {
-            background-color: #FFFFFF;
-            border-bottom: 4px solid var(--primary-red);
-            padding: 20px 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* --- LOGIN PAGE --- */
+        .login-container {
+            height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://i.ibb.co/j9Pp0YLz/Logo-2.png') center no-repeat;
         }
-        .navbar img { height: 60px; }
-        .navbar-title h1 { font-size: 28px; font-weight: 900; letter-spacing: 1.5px; }
-        .navbar-title p { color: var(--primary-red); font-size: 13px; font-weight: 800; text-transform: uppercase; }
+        .login-card {
+            background: white; padding: 40px; border-radius: 15px; width: 100%; max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); border-top: 5px solid var(--primary);
+        }
+        .login-card h2 { text-align: center; margin-bottom: 25px; font-weight: 900; letter-spacing: 1px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 800; margin-bottom: 5px; color: #666; }
+        .input-ctrl { 
+            width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; 
+            font-weight: 600; outline: none;
+        }
+        .btn-login { 
+            width: 100%; padding: 15px; background: var(--dark); color: white; border: none; 
+            border-radius: 8px; font-weight: 900; cursor: pointer; margin-top: 10px;
+        }
+
+        /* --- MAIN DASHBOARD --- */
+        .navbar {
+            background: white; border-bottom: 4px solid var(--primary); padding: 10px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .navbar img { height: 50px; }
+        .user-info { display: flex; align-items: center; gap: 20px; font-weight: 800; }
+        .btn-admin { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
 
         .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
-
-        /* Panel de Filtros Extendido */
-        .filter-panel {
-            background: var(--bg-card); padding: 20px; border-radius: 12px;
-            border: 1px solid var(--border-color); margin-bottom: 20px;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;
-        }
-        .filter-input {
-            padding: 12px; border: 1px solid #9CA3AF; border-radius: 8px;
-            font-size: 14px; font-weight: 700; background: #F9FAFB;
-        }
-
-        .table-container { background: var(--bg-card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); }
+        .table-container { background: white; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; }
-        th { background: var(--primary-red); color: #FFF; padding: 15px; text-transform: uppercase; font-size: 12px; font-weight: 900; }
-        td { padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); font-weight: 700; }
-        
-        .group-badge { background: #E5E7EB; padding: 4px 10px; border-radius: 15px; font-size: 11px; color: #374151; }
-        .score-box { background: #000; color: #FFF; padding: 6px 12px; border-radius: 6px; font-size: 16px; }
+        th { background: var(--primary); color: white; padding: 15px; text-transform: uppercase; font-size: 11px; font-weight: 900; }
+        td { padding: 15px; text-align: center; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 14px; }
+        tr:nth-child(even) { background: #F9FAFB; }
+        .score-badge { background: var(--dark); color: white; padding: 5px 12px; border-radius: 4px; }
+
+        /* --- MODAL --- */
+        .modal { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content { 
+            background: white; width: 90%; max-width: 800px; border-radius: 15px; overflow: hidden;
+            display: flex; flex-direction: column; height: 600px;
+        }
+        .modal-tabs { display: flex; background: var(--dark); }
+        .tab-btn { 
+            flex: 1; padding: 15px; border: none; background: none; color: #999; 
+            font-weight: 900; cursor: pointer; font-size: 12px;
+        }
+        .tab-btn.active { color: white; border-bottom: 3px solid var(--primary); }
+        .tab-content { padding: 30px; flex: 1; overflow-y: auto; display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
+
+    {% if login_view %}
+    <div class="login-container">
+        <div class="login-card">
+            <h2>ACCESO ALPHA CLOUD</h2>
+            <form action="/login" method="POST">
+                <div class="form-group">
+                    <label>TIPO DE ACCESO</label>
+                    <select name="role" class="input-ctrl">
+                        <option value="admin">ADMINISTRADOR</option>
+                        <option value="partner">PARTNER</option>
+                        <option value="membresia">MEMBRESÍA</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>USUARIO</label>
+                    <input type="text" name="username" class="input-ctrl" required>
+                </div>
+                <div class="form-group">
+                    <label>CONTRASEÑA</label>
+                    <input type="password" name="password" class="input-ctrl" required>
+                </div>
+                <button type="submit" class="btn-login">INGRESAR</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    
     <header class="navbar">
-        <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Alpha Logo">
-        <div class="navbar-title">
-            <h1>SISTEMA DE EVALUACIÓN GLOBAL</h1>
-            <p>Resultados ALPHA en Tiempo Real</p>
+        <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Logo">
+        <div class="user-info">
+            <span>{{ role | upper }}: {{ username | upper }}</span>
+            {% if role == 'admin' %}
+            <button class="btn-admin" onclick="toggleModal(true)">PANEL CONTROL</button>
+            {% endif %}
+            <a href="/logout" style="color: var(--primary); text-decoration: none; font-size: 12px;">SALIR</a>
         </div>
     </header>
 
     <main class="container">
-        <div class="filter-panel">
-            <input type="text" id="fShooter" class="filter-input" placeholder="Tirador...">
-            <input type="text" id="fID" class="filter-input" placeholder="Cédula/ID...">
-            <input type="text" id="fGroup" class="filter-input" placeholder="Grupo/Empresa...">
-            <input type="text" id="fStation" class="filter-input" placeholder="Estación...">
-        </div>
-
         <div class="table-container">
-            <table id="mainTable">
+            <table>
                 <thead>
                     <tr>
                         <th>Fecha/Hora</th>
@@ -84,14 +128,14 @@
                 </thead>
                 <tbody>
                     {% for r in records %}
-                    <tr class="data-row">
-                        <td style="font-size: 12px;">{{ r.timestamp }}</td>
+                    <tr>
+                        <td style="font-size: 11px;">{{ r.timestamp }}</td>
                         <td>{{ r.sim_id }}</td>
-                        <td><span class="group-badge">{{ r.group_name }}</span></td>
+                        <td>{{ r.group_name }}</td>
                         <td style="font-family: monospace;">{{ r.shooter_id }}</td>
                         <td>{{ r.shooter_name | upper }}</td>
-                        <td style="color: #666;">{{ r.scenario }}</td>
-                        <td><span class="score-box">{{ r.score }}</span></td>
+                        <td>{{ r.scenario }}</td>
+                        <td><span class="score-badge">{{ r.score }}</span></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -99,17 +143,85 @@
         </div>
     </main>
 
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-tabs">
+                <button class="tab-btn active" onclick="showTab('new')">REGISTRO NUEVO</button>
+                <button class="tab-btn" onclick="showTab('gen')">TABLA GENERAL</button>
+                <button class="tab-btn" onclick="showTab('top')">TOP GLOBAL</button>
+                <button class="tab-btn" onclick="toggleModal(false)" style="background: var(--primary); color: white;">CERRAR</button>
+            </div>
+
+            <div class="tab-content active" id="tab-new">
+                <h3 style="margin-bottom: 20px;">CREAR NUEVO PERFIL</h3>
+                <div class="form-group">
+                    <label>TIPO DE PERFIL</label>
+                    <select id="reg-role" class="input-ctrl" onchange="toggleRegFields()">
+                        <option value="partner">PARTNER</option>
+                        <option value="membresia">MEMBRESÍA</option>
+                    </select>
+                </div>
+                <div id="common-fields" class="form-group">
+                    <label>USUARIO / NOMBRE</label><input type="text" id="reg-user" class="input-ctrl">
+                    <label>CONTRASEÑA</label><input type="password" id="reg-pass" class="input-ctrl">
+                </div>
+                
+                <div id="partner-fields">
+                    <label>NOMBRE ESCUELA</label><input type="text" id="reg-school" class="input-ctrl">
+                    <label>UBICACIÓN</label><input type="text" id="reg-loc" class="input-ctrl">
+                    <label>GRUPO / EMPRESA</label><input type="text" id="reg-group" class="input-ctrl">
+                </div>
+
+                <div id="membresia-fields" style="display: none;">
+                    <label>SUCURSAL</label><input type="text" id="reg-suc" class="input-ctrl">
+                    <label>IDENTIFICACIÓN</label><input type="text" id="reg-id" class="input-ctrl">
+                </div>
+
+                <button class="btn-login" style="background: var(--primary);" onclick="saveUser()">REGISTRAR PERFIL</button>
+            </div>
+
+            <div class="tab-content" id="tab-gen">
+                <p>Vista rápida de todos los datos...</p>
+                </div>
+            
+            <div class="tab-content" id="tab-top">
+                <p>Ranking mejores puntajes ALPHA...</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <script>
-        const inputs = [document.getElementById('fShooter'), document.getElementById('fID'), document.getElementById('fGroup'), document.getElementById('fStation')];
-        inputs.forEach(input => {
-            input.addEventListener('input', () => {
-                const vals = inputs.map(i => i.value.toLowerCase());
-                document.querySelectorAll('.data-row').forEach(row => {
-                    const match = [4, 3, 2, 1].every((colIdx, i) => row.cells[colIdx].textContent.toLowerCase().includes(vals[i]));
-                    row.style.display = match ? '' : 'none';
-                });
+        function toggleModal(show) { document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function toggleRegFields() {
+            const role = document.getElementById('reg-role').value;
+            document.getElementById('partner-fields').style.display = role === 'partner' ? 'block' : 'none';
+            document.getElementById('membresia-fields').style.display = role === 'membresia' ? 'block' : 'none';
+        }
+
+        async function saveUser() {
+            const data = {
+                username: document.getElementById('reg-user').value,
+                password: document.getElementById('reg-pass').value,
+                role: document.getElementById('reg-role').value,
+                group_name: document.getElementById('reg-group').value,
+                shooter_id: document.getElementById('reg-id').value,
+                school_name: document.getElementById('reg-school').value,
+                location: document.getElementById('reg-loc').value || document.getElementById('reg-suc').value
+            };
+            const resp = await fetch('/register_user', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
             });
-        });
+            if(resp.ok) { alert("Perfil Creado"); toggleModal(false); }
+        }
     </script>
 </body>
 </html>
