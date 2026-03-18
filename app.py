@@ -138,15 +138,19 @@ def edit_partner():
     if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
     data = request.json
     try:
-        partner = User.query.filter_by(id=data['user_id'], role='partner').first()
+        # CORRECCIÓN AQUÍ: Convertimos data['user_id'] a int() para que PostgreSQL no falle
+        partner = User.query.filter_by(id=int(data['user_id']), role='partner').first()
+        
         if partner:
             # Si el campo tiene texto, se actualiza. Si viene vacío, se ignora.
             if data.get('password'): partner.password = data['password']
             if data.get('location'): partner.location = data['location']
             if data.get('group_name'): partner.group_name = data['group_name']
             if data.get('logo_url'): partner.logo_url = data['logo_url']
+            
             db.session.commit()
             return jsonify({"status": "success"})
+            
         return jsonify({"status": "error"}), 404
     except Exception as e: 
         print(f"Error editando partner: {e}")
