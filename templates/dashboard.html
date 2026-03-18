@@ -218,6 +218,10 @@
             <div id="p-fields">
                 <div class="input-group"><label>Ubicación</label><input type="text" id="rLoc" class="input-ctrl"></div>
                 <div class="input-group"><label>Grupo</label><input type="text" id="rGrp" class="input-ctrl"></div>
+                <div class="input-group">
+                    <label>Logo de Escuela (Opcional)</label>
+                    <input type="file" id="rLogo" class="input-ctrl" accept="image/*" style="padding: 10px;">
+                </div>
             </div>
             <div id="m-fields" style="display: none;">
                 <div class="input-group"><label>Sucursal</label><input type="text" id="rSuc" class="input-ctrl"></div>
@@ -280,21 +284,59 @@
             const btnSaveUser = document.getElementById('btnSaveUser');
             if(btnSaveUser) {
                 btnSaveUser.addEventListener('click', async () => {
+                    btnSaveUser.textContent = "Procesando...";
+                    btnSaveUser.style.opacity = "0.5";
+                    btnSaveUser.disabled = true;
+
+                    let uploadedLogoUrl = "";
+                    const roleVal = document.getElementById('rRole').value;
+                    const logoFile = document.getElementById('rLogo').files[0];
+
+                    // Si es partner y seleccionó un archivo, lo subimos a ImgBB
+                    if (roleVal === 'partner' && logoFile) {
+                        const formData = new FormData();
+                        formData.append('image', logoFile);
+                        try {
+                            const imgbbRes = await fetch('https://api.imgbb.com/1/upload?key=df01bb05ce03159d54c33e1e22eba2cf', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const imgbbData = await imgbbRes.json();
+                            if (imgbbData.success) {
+                                uploadedLogoUrl = imgbbData.data.url; // Capturamos la URL directa
+                            }
+                        } catch (error) {
+                            console.error("Error subiendo el logo:", error);
+                            alert("No se pudo subir el logo, el registro continuará sin imagen.");
+                        }
+                    }
+
+                    // Enviamos los datos al servidor de Alpha Cloud
                     const data = {
                         username: document.getElementById('rUser').value,
                         password: document.getElementById('rPass').value,
-                        role: document.getElementById('rRole').value,
+                        role: roleVal,
                         group_name: document.getElementById('rGrp').value,
                         shooter_id: document.getElementById('rIdDoc').value,
-                        location: document.getElementById('rLoc').value || document.getElementById('rSuc').value
+                        location: document.getElementById('rLoc').value || document.getElementById('rSuc').value,
+                        logo_url: uploadedLogoUrl // Se envía la URL de ImgBB
                     };
+
                     const resp = await fetch('/register_user', { 
                         method: 'POST', 
                         headers: {'Content-Type': 'application/json'}, 
                         body: JSON.stringify(data) 
                     });
-                    if(resp.ok) { alert("Usuario Creado"); location.reload(); }
-                    else { alert("Error al crear usuario"); }
+
+                    if(resp.ok) { 
+                        alert("Usuario y configuración de Escuela guardados correctamente."); 
+                        location.reload(); 
+                    } else { 
+                        alert("Error al crear usuario."); 
+                        btnSaveUser.textContent = "Finalizar Registro"; 
+                        btnSaveUser.style.opacity = "1";
+                        btnSaveUser.disabled = false;
+                    }
                 });
             }
 

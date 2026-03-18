@@ -35,7 +35,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- MODELOS ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -44,7 +43,9 @@ class User(db.Model):
     group_name = db.Column(db.String(100), nullable=True) 
     shooter_id = db.Column(db.String(50), nullable=True)
     location = db.Column(db.String(100), nullable=True)
+    logo_url = db.Column(db.String(255), nullable=True) # <-- NUEVO CAMPO PARA EL LOGO
 
+# (Mantén ScoreRecord igual...)
 class ScoreRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sim_id = db.Column(db.String(100), nullable=False)
@@ -98,12 +99,14 @@ def register_user():
         new_user = User(
             username=data['username'], password=data['password'], role=data['role'],
             group_name=data.get('group_name'), shooter_id=data.get('shooter_id'),
-            location=data.get('location')
+            location=data.get('location'), logo_url=data.get('logo_url') # <-- SE GUARDA AQUÍ
         )
         db.session.add(new_user)
         db.session.commit()
         return jsonify({"status": "success"})
-    except: return jsonify({"status": "error"}), 400
+    except Exception as e: 
+        print(f"Error registrando usuario: {e}")
+        return jsonify({"status": "error"}), 400
 
 @app.route('/')
 @login_required
@@ -203,24 +206,37 @@ def generate_pdf():
     except Exception as e:
         print(f"Error generando grafica API: {e}")
 
+    partner_user = User.query.filter_by(group_name=filter_val, role='partner').first()
+    partner_logo = partner_user.logo_url if partner_user else None
+
     # --- GENERACIÓN DEL PDF ---
     class TacticPDF(FPDF):
         def header(self):
-            # FONDO BLANCO PARA EL LOGO
+            # 1. LOGO PRINCIPAL ALPHA (Izquierda)
             try: 
                 logo_res = requests.get('https://i.ibb.co/j9Pp0YLz/Logo-2.png', timeout=5)
                 if logo_res.status_code == 200:
-                    # FIX AQUÍ: Se eliminó el parámetro name="logo.png" para evitar el error de Python
                     self.image(io.BytesIO(logo_res.content), x=10, y=8, w=40)
             except: pass
             
+            # 2. LOGO DEL PARTNER / ESCUELA (Derecha)
+            if partner_logo:
+                try:
+                    p_logo_res = requests.get(partner_logo, timeout=5)
+                    if p_logo_res.status_code == 200:
+                        self.image(io.BytesIO(p_logo_res.content), x=165, y=8, w=35)
+                except: pass
+            
+            # TÍTULOS CENTRALES / DERECHOS
             self.set_font('helvetica', 'B', 22)
             self.set_text_color(0, 0, 0)
-            self.cell(0, 10, 'EXPEDIENTE TACTICO DE RENDIMIENTO', align='R', ln=True)
+            # Ajustamos la alineación dependiendo de si hay logo o no
+            align_txt = 'C' if partner_logo else 'R'
+            self.cell(0, 10, 'EXPEDIENTE TACTICO DE RENDIMIENTO', align=align_txt, ln=True)
             
             self.set_font('helvetica', 'B', 9)
             self.set_text_color(185, 28, 28)
-            self.cell(0, 6, 'SISTEMA ALPHA CLOUD - REPORTE OFICIAL CONFIDENCIAL', align='R', ln=True)
+            self.cell(0, 6, 'SISTEMA ALPHA CLOUD - REPORTE OFICIAL CONFIDENCIAL', align=align_txt, ln=True)
             self.ln(5)
             
             self.set_draw_color(185, 28, 28)
