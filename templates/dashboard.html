@@ -6,105 +6,245 @@
     <title>Centro de Mando - Alpha Cloud</title>
     <style>
         :root {
-            --bg-dark: #0B0F19;
-            --bg-card: #111827;
-            --primary-red: #DC2626;
-            --text-light: #F9FAFB;
-            --text-muted: #9CA3AF;
-            --border-color: #1F2937;
+            --bg-main: #F3F4F6;
+            --bg-card: #FFFFFF;
+            --primary-red: #B91C1C;
+            --primary-black: #000000;
+            --text-black: #000000;
+            --border-color: #D1D5DB;
         }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: var(--bg-dark); 
-            color: var(--text-light); 
-            margin: 0; 
-            padding: 40px 20px; 
+            background-color: var(--bg-main); 
+            color: var(--text-black); 
+            -webkit-font-smoothing: antialiased;
         }
+
+        /* --- HEADER (FONDO BLANCO) --- */
+        .navbar {
+            background-color: #FFFFFF; /* Fondo Blanco */
+            border-bottom: 4px solid var(--primary-red);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar img {
+            height: 60px;
+            object-fit: contain;
+        }
+
+        .navbar-title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar-title h1 {
+            color: var(--primary-black); /* Texto Negro */
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            margin: 0;
+        }
+
+        .navbar-title p {
+            color: var(--primary-red); /* Texto Rojo */
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
         .container {
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 40px auto;
+            padding: 0 20px;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--border-color);
+
+        /* --- PANEL DE FILTROS --- */
+        .filter-panel {
+            background-color: var(--bg-card);
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
         }
-        .header h1 { 
-            color: var(--primary-red); 
-            margin: 0 0 10px 0;
-            font-weight: 900;
-            letter-spacing: 2px;
-            font-size: 32px;
+
+        .filter-title {
+            font-weight: 800;
+            color: var(--primary-black);
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .header p {
-            color: var(--text-muted);
-            margin: 0;
-            font-size: 1.1em;
-            letter-spacing: 1px;
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            border: 1px solid #9CA3AF;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-black);
+            background-color: #F9FAFB;
+            transition: all 0.2s;
+            font-weight: 700;
         }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary-red);
+            background-color: var(--bg-card);
+            box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
+        }
+
+        .filter-input::placeholder {
+            color: #6B7280;
+            font-weight: normal;
+        }
+
+        /* --- TABLA DE RESULTADOS --- */
         .table-container {
             background-color: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
             overflow: hidden;
             border: 1px solid var(--border-color);
         }
+
         table { 
             width: 100%; 
             border-collapse: collapse; 
         }
+
         th, td { 
-            padding: 18px 20px; 
-            text-align: center; 
+            padding: 18px 25px; 
+            text-align: left; 
             border-bottom: 1px solid var(--border-color); 
+            color: #000000; /* Valores estrictamente Negros */
         }
+
+        /* CABECERA ROJA */
         th { 
-            background-color: #000000; 
-            color: var(--text-muted); 
+            background-color: var(--primary-red); /* Fondo Rojo */
+            color: #FFFFFF; /* Texto Blanco para legibilidad */
             text-transform: uppercase; 
-            font-size: 12px;
-            letter-spacing: 1.5px;
-            font-weight: 800;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
-        tr:hover td { 
-            background-color: rgba(220, 38, 38, 0.05); 
-        }
-        .highlight-score {
-            color: #10b981; /* Verde esmeralda para el puntaje */
+            font-size: 13px;
+            letter-spacing: 1px;
             font-weight: 900;
-            font-size: 1.2em;
         }
+
+        th:nth-child(5), td:nth-child(5) { text-align: center; }
+
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) { background-color: #F9FAFB; }
+        tr:hover td { background-color: #FEF2F2; } /* Hover rojizo suave */
+
+        /* Estilos de Textos Internos (Todos Negros) */
+        .timestamp {
+            color: #000000;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
         .sim-id {
             font-family: 'Consolas', monospace;
-            color: var(--text-muted);
-            font-size: 0.9em;
-            background: #000;
+            color: #000000;
+            font-size: 13px;
+            font-weight: 800;
+            background-color: #E5E7EB;
             padding: 4px 8px;
             border-radius: 4px;
+            border: 1px solid #D1D5DB;
         }
+
         .shooter-name {
+            font-weight: 900;
+            color: #000000;
+            font-size: 15px;
+        }
+
+        .scenario-name {
             font-weight: 800;
-            color: var(--text-light);
+            color: #000000;
+        }
+
+        /* Caja de Puntaje */
+        .score-box {
+            display: inline-block;
+            background-color: #E5E7EB;
+            color: #000000;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 16px;
+            border: 2px solid #D1D5DB;
+        }
+
+        /* Destacar puntajes altos pero manteniendo texto negro/oscuro */
+        .score-high {
+            background-color: #FECACA;
+            color: #7F1D1D;
+            border-color: #F87171;
+        }
+
+        .no-data {
+            padding: 60px !important;
+            text-align: center !important;
+            color: #000000;
+            font-size: 16px;
+            font-weight: 800;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🛡️ RED TÁCTICA GLOBAL ALPHA</h1>
-            <p>TELEMETRÍA DE RESULTADOS EN TIEMPO REAL</p>
+
+    <header class="navbar">
+        <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Alpha Logo">
+        <div class="navbar-title">
+            <h1>SISTEMA DE EVALUACIÓN GLOBAL</h1>
+            <p>Resultados ALPHA en Tiempo Real</p>
         </div>
+    </header>
+
+    <main class="container">
         
+        <div class="filter-panel">
+            <div class="filter-title">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                FILTROS:
+            </div>
+            <input type="text" id="filterShooter" class="filter-input" placeholder="Buscar por Tirador...">
+            <input type="text" id="filterStation" class="filter-input" placeholder="Buscar por ID de Estación...">
+            <input type="text" id="filterScenario" class="filter-input" placeholder="Buscar por Escenario...">
+        </div>
+
         <div class="table-container">
-            <table>
+            <table id="resultsTable">
                 <thead>
                     <tr>
                         <th>Fecha y Hora</th>
-                        <th>ID de Estación</th>
+                        <th>ID Estación</th>
                         <th>Operador / Tirador</th>
                         <th>Escenario</th>
                         <th>Puntaje</th>
@@ -112,23 +252,80 @@
                 </thead>
                 <tbody>
                     {% for r in records %}
-                    <tr>
-                        <td style="color: var(--text-muted); font-size: 0.9em;">{{ r.timestamp }}</td>
+                    <tr class="data-row">
+                        <td class="timestamp">{{ r.timestamp }}</td>
                         <td><span class="sim-id">{{ r.sim_id }}</span></td>
                         <td class="shooter-name">{{ r.shooter_name | upper }}</td>
-                        <td>{{ r.scenario | upper }}</td>
-                        <td class="highlight-score">{{ r.score }}</td>
+                        <td class="scenario-name">{{ r.scenario | upper }}</td>
+                        <td>
+                            <span class="score-box {% if r.score >= 90 %}score-high{% endif %}">
+                                {{ r.score }}
+                            </span>
+                        </td>
                     </tr>
                     {% else %}
-                    <tr>
-                        <td colspan="5" style="padding: 50px; color: var(--text-muted); font-size: 1.1em;">
+                    <tr id="emptyRow">
+                        <td colspan="5" class="no-data">
                             Aún no se han recibido transmisiones de los simuladores.
                         </td>
                     </tr>
                     {% endfor %}
+                    <tr id="noMatchRow" style="display: none;">
+                        <td colspan="5" class="no-data">
+                            Ningún registro coincide con los filtros de búsqueda.
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-    </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterShooter = document.getElementById('filterShooter');
+            const filterStation = document.getElementById('filterStation');
+            const filterScenario = document.getElementById('filterScenario');
+            const rows = document.querySelectorAll('.data-row');
+            const noMatchRow = document.getElementById('noMatchRow');
+
+            function applyFilters() {
+                const valShooter = filterShooter.value.toLowerCase();
+                const valStation = filterStation.value.toLowerCase();
+                const valScenario = filterScenario.value.toLowerCase();
+                
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    // Índices de celdas: 1=Estación, 2=Tirador, 3=Escenario
+                    const textStation = row.cells[1].textContent.toLowerCase();
+                    const textShooter = row.cells[2].textContent.toLowerCase();
+                    const textScenario = row.cells[3].textContent.toLowerCase();
+
+                    const matchShooter = textShooter.includes(valShooter);
+                    const matchStation = textStation.includes(valStation);
+                    const matchScenario = textScenario.includes(valScenario);
+
+                    if (matchShooter && matchStation && matchScenario) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Mostrar/ocultar mensaje de "No match"
+                if (visibleCount === 0 && rows.length > 0) {
+                    noMatchRow.style.display = '';
+                } else {
+                    noMatchRow.style.display = 'none';
+                }
+            }
+
+            // Escuchar eventos de teclado en los inputs
+            filterShooter.addEventListener('input', applyFilters);
+            filterStation.addEventListener('input', applyFilters);
+            filterScenario.addEventListener('input', applyFilters);
+        });
+    </script>
 </body>
 </html>
