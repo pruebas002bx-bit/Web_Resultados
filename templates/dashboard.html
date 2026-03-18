@@ -1,120 +1,158 @@
 <!DOCTYPE html>
-<html lang='es'>
+<html lang="es">
 <head>
-    <meta charset='UTF-8'>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALPHA CLOUD - Tactical Control</title>
+    <title>ALPHA CLOUD - Tactical Dashboard</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root {
-            --primary: #B91C1C;
-            --dark: #000000;
-            --light: #FFFFFF;
-            --gray: #F3F4F6;
-            --border: #D1D5DB;
+        :root { --primary: #B91C1C; --dark: #000000; --glass: rgba(255, 255, 255, 0.95); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        
+        body { 
+            background: url('https://i.ibb.co/MkwvwMgp/Fondo.png') no-repeat center center fixed; 
+            background-size: cover; color: var(--dark); min-height: 100vh;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--gray); color: var(--dark); overflow-x: hidden; }
 
-        /* --- LOGIN PAGE --- */
-        .login-container {
+        /* --- VISTA LOGIN --- */
+        .login-overlay { 
             height: 100vh; display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://i.ibb.co/j9Pp0YLz/Logo-2.png') center no-repeat;
+            background: rgba(0,0,0,0.7);
         }
-        .login-card {
-            background: white; padding: 40px; border-radius: 15px; width: 100%; max-width: 400px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); border-top: 5px solid var(--primary);
+        .login-card { 
+            background: var(--glass); padding: 40px; border-radius: 20px; width: 100%; max-width: 420px; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border-top: 6px solid var(--primary);
         }
-        .login-card h2 { text-align: center; margin-bottom: 25px; font-weight: 900; letter-spacing: 1px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 12px; font-weight: 800; margin-bottom: 5px; color: #666; }
+        .login-card img { width: 120px; margin-bottom: 20px; }
+        .login-card h2 { font-weight: 900; letter-spacing: -1px; margin-bottom: 30px; text-transform: uppercase; }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 11px; font-weight: 800; color: #555; margin-bottom: 5px; text-transform: uppercase; }
         .input-ctrl { 
-            width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; 
-            font-weight: 600; outline: none;
+            width: 100%; padding: 14px; border: 2px solid #EEE; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none; transition: 0.3s;
         }
-        .btn-login { 
-            width: 100%; padding: 15px; background: var(--dark); color: white; border: none; 
-            border-radius: 8px; font-weight: 900; cursor: pointer; margin-top: 10px;
+        .input-ctrl:focus { border-color: var(--primary); }
+        .btn-action { 
+            width: 100%; padding: 16px; background: var(--dark); color: white; border: none; border-radius: 10px; 
+            font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
         }
 
-        /* --- MAIN DASHBOARD --- */
-        .navbar {
-            background: white; border-bottom: 4px solid var(--primary); padding: 10px 40px;
-            display: flex; align-items: center; justify-content: space-between;
+        /* --- DASHBOARD --- */
+        .navbar { 
+            background: var(--glass); padding: 15px 50px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px solid var(--primary); backdrop-filter: blur(10px);
         }
-        .navbar img { height: 50px; }
-        .user-info { display: flex; align-items: center; gap: 20px; font-weight: 800; }
-        .btn-admin { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        .nav-logo { height: 45px; }
+        .btn-reg { 
+            background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; 
+            font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px;
+        }
 
-        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
-        .table-container { background: white; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .main-content { max-width: 1500px; margin: 30px auto; padding: 0 30px; }
+
+        /* PANEL DE FILTROS TÁCTICO */
+        .tactical-filters {
+            background: var(--glass); padding: 25px; border-radius: 15px; margin-bottom: 20px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;
+        }
+        .filter-box label { font-size: 10px; font-weight: 900; color: var(--primary); margin-bottom: 5px; display: block; }
+
+        /* TABLA MODERNA */
+        .table-wrap { background: var(--glass); border-radius: 15px; overflow: hidden; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; }
-        th { background: var(--primary); color: white; padding: 15px; text-transform: uppercase; font-size: 11px; font-weight: 900; }
-        td { padding: 15px; text-align: center; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 14px; }
-        tr:nth-child(even) { background: #F9FAFB; }
-        .score-badge { background: var(--dark); color: white; padding: 5px 12px; border-radius: 4px; }
+        th { background: var(--dark); color: white; padding: 18px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 18px; text-align: center; font-weight: 700; border-bottom: 1px solid #EEE; font-size: 14px; }
+        tr:hover { background: #F9FAFB; }
+        
+        .badge-score { background: var(--primary); color: white; padding: 6px 14px; border-radius: 6px; font-size: 16px; font-weight: 900; }
+        .badge-group { background: #E5E7EB; color: #374151; padding: 4px 10px; border-radius: 20px; font-size: 11px; }
 
-        /* --- MODAL --- */
-        .modal { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .modal-content { 
-            background: white; width: 90%; max-width: 800px; border-radius: 15px; overflow: hidden;
-            display: flex; flex-direction: column; height: 600px;
-        }
-        .modal-tabs { display: flex; background: var(--dark); }
-        .tab-btn { 
-            flex: 1; padding: 15px; border: none; background: none; color: #999; 
-            font-weight: 900; cursor: pointer; font-size: 12px;
-        }
-        .tab-btn.active { color: white; border-bottom: 3px solid var(--primary); }
-        .tab-content { padding: 30px; flex: 1; overflow-y: auto; display: none; }
-        .tab-content.active { display: block; }
+        /* MODAL */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: none; align-items:center; justify-content:center; z-index: 1000; }
+        .modal-body { background: white; width: 450px; border-radius: 20px; padding: 40px; position: relative; }
+        .close-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #999; }
+
+        .sort-btns { display: flex; gap: 5px; margin-bottom: 15px; }
+        .btn-sort { background: white; border: 1px solid var(--border); padding: 5px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; font-weight: 800; }
     </style>
 </head>
 <body>
 
     {% if login_view %}
-    <div class="login-container">
+    <div class="login-overlay">
         <div class="login-card">
-            <h2>ACCESO ALPHA CLOUD</h2>
+            <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Alpha Logo">
+            <h2>Base de datos</h2>
             <form action="/login" method="POST">
-                <div class="form-group">
-                    <label>TIPO DE ACCESO</label>
+                <div class="input-group">
+                    <label>Tipo de Unidad</label>
                     <select name="role" class="input-ctrl">
-                        <option value="admin">ADMINISTRADOR</option>
-                        <option value="partner">PARTNER</option>
-                        <option value="membresia">MEMBRESÍA</option>
+                        <option value="admin">Administrador Central</option>
+                        <option value="partner">Unidad Partner / Escuela</option>
+                        <option value="membresia">Membresía Individual</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>USUARIO</label>
+                <div class="input-group">
+                    <label>Identificador de Usuario</label>
                     <input type="text" name="username" class="input-ctrl" required>
                 </div>
-                <div class="form-group">
-                    <label>CONTRASEÑA</label>
+                <div class="input-group">
+                    <label>Código de Acceso</label>
                     <input type="password" name="password" class="input-ctrl" required>
                 </div>
-                <button type="submit" class="btn-login">INGRESAR</button>
+                <button type="submit" class="btn-action">Iniciar Sesión</button>
             </form>
         </div>
     </div>
     {% else %}
-    
-    <header class="navbar">
-        <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Logo">
-        <div class="user-info">
-            <span>{{ role | upper }}: {{ username | upper }}</span>
-            {% if role == 'admin' %}
-            <button class="btn-admin" onclick="toggleModal(true)">PANEL CONTROL</button>
-            {% endif %}
-            <a href="/logout" style="color: var(--primary); text-decoration: none; font-size: 12px;">SALIR</a>
-        </div>
-    </header>
 
-    <main class="container">
-        <div class="table-container">
-            <table>
+    <nav class="navbar">
+        <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" class="nav-logo">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <span style="font-weight: 900; font-size: 14px;">OPERADOR: <span style="color: var(--primary);">{{ username | upper }}</span></span>
+            {% if role == 'admin' %}
+            <button class="btn-reg" onclick="openModal()">
+                <i data-lucide="user-plus"></i> Registro Nuevo
+            </button>
+            {% endif %}
+            <a href="/logout" style="color: var(--primary);"><i data-lucide="log-out"></i></a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="tactical-filters">
+            <div class="filter-box">
+                <label>Desde Fecha</label>
+                <input type="date" id="dateFrom" class="input-ctrl">
+            </div>
+            <div class="filter-box">
+                <label>Hasta Fecha</label>
+                <input type="date" id="dateTo" class="input-ctrl">
+            </div>
+            <div class="filter-box">
+                <label>ID / Cédula</label>
+                <input type="text" id="searchID" class="input-ctrl" placeholder="Buscar ID...">
+            </div>
+            <div class="filter-box">
+                <label>Estación</label>
+                <input type="text" id="searchStation" class="input-ctrl" placeholder="ID Estación...">
+            </div>
+            <div class="filter-box">
+                <label>Escenario</label>
+                <input type="text" id="searchScenario" class="input-ctrl" placeholder="Escenario...">
+            </div>
+            <div class="filter-box">
+                <button class="btn-action" style="padding: 10px;" onclick="resetFilters()">Limpiar</button>
+            </div>
+        </div>
+
+        <div class="sort-btns">
+            <button class="btn-sort" onclick="sortTable(true)">Mayor Puntaje ▲</button>
+            <button class="btn-sort" onclick="sortTable(false)">Menor Puntaje ▼</button>
+        </div>
+
+        <div class="table-wrap">
+            <table id="alphaTable">
                 <thead>
                     <tr>
                         <th>Fecha/Hora</th>
@@ -126,101 +164,114 @@
                         <th>Puntaje</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     {% for r in records %}
-                    <tr>
-                        <td style="font-size: 11px;">{{ r.timestamp }}</td>
+                    <tr class="data-row" data-date="{{ r.timestamp[:10] }}" data-score="{{ r.score }}">
+                        <td style="font-size: 12px;">{{ r.timestamp }}</td>
                         <td>{{ r.sim_id }}</td>
-                        <td>{{ r.group_name }}</td>
-                        <td style="font-family: monospace;">{{ r.shooter_id }}</td>
+                        <td><span class="badge-group">{{ r.group_name }}</span></td>
+                        <td class="col-id">{{ r.shooter_id }}</td>
                         <td>{{ r.shooter_name | upper }}</td>
                         <td>{{ r.scenario }}</td>
-                        <td><span class="score-badge">{{ r.score }}</span></td>
+                        <td><span class="badge-score">{{ r.score }}</span></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </main>
+    </div>
 
-    <div class="modal" id="adminModal">
-        <div class="modal-content">
-            <div class="modal-tabs">
-                <button class="tab-btn active" onclick="showTab('new')">REGISTRO NUEVO</button>
-                <button class="tab-btn" onclick="showTab('gen')">TABLA GENERAL</button>
-                <button class="tab-btn" onclick="showTab('top')">TOP GLOBAL</button>
-                <button class="tab-btn" onclick="toggleModal(false)" style="background: var(--primary); color: white;">CERRAR</button>
+    <div class="modal" id="regModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" onclick="closeModal()"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px;">NUEVO REGISTRO</h2>
+            <div class="input-group">
+                <label>Tipo de Perfil</label>
+                <select id="rRole" class="input-ctrl" onchange="toggleForm()">
+                    <option value="partner">Partner / Escuela</option>
+                    <option value="membresia">Membresía Individual</option>
+                </select>
             </div>
-
-            <div class="tab-content active" id="tab-new">
-                <h3 style="margin-bottom: 20px;">CREAR NUEVO PERFIL</h3>
-                <div class="form-group">
-                    <label>TIPO DE PERFIL</label>
-                    <select id="reg-role" class="input-ctrl" onchange="toggleRegFields()">
-                        <option value="partner">PARTNER</option>
-                        <option value="membresia">MEMBRESÍA</option>
-                    </select>
-                </div>
-                <div id="common-fields" class="form-group">
-                    <label>USUARIO / NOMBRE</label><input type="text" id="reg-user" class="input-ctrl">
-                    <label>CONTRASEÑA</label><input type="password" id="reg-pass" class="input-ctrl">
-                </div>
-                
-                <div id="partner-fields">
-                    <label>NOMBRE ESCUELA</label><input type="text" id="reg-school" class="input-ctrl">
-                    <label>UBICACIÓN</label><input type="text" id="reg-loc" class="input-ctrl">
-                    <label>GRUPO / EMPRESA</label><input type="text" id="reg-group" class="input-ctrl">
-                </div>
-
-                <div id="membresia-fields" style="display: none;">
-                    <label>SUCURSAL</label><input type="text" id="reg-suc" class="input-ctrl">
-                    <label>IDENTIFICACIÓN</label><input type="text" id="reg-id" class="input-ctrl">
-                </div>
-
-                <button class="btn-login" style="background: var(--primary);" onclick="saveUser()">REGISTRAR PERFIL</button>
+            <div class="input-group">
+                <label>Nombre de Usuario</label>
+                <input type="text" id="rUser" class="input-ctrl">
             </div>
-
-            <div class="tab-content" id="tab-gen">
-                <p>Vista rápida de todos los datos...</p>
-                </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="rPass" class="input-ctrl">
+            </div>
             
-            <div class="tab-content" id="tab-top">
-                <p>Ranking mejores puntajes ALPHA...</p>
+            <div id="p-fields">
+                <div class="input-group"><label>Ubicación</label><input type="text" id="rLoc" class="input-ctrl"></div>
+                <div class="input-group"><label>Vincular a Grupo</label><input type="text" id="rGrp" class="input-ctrl"></div>
             </div>
+
+            <div id="m-fields" style="display: none;">
+                <div class="input-group"><label>Sucursal</label><input type="text" id="rSuc" class="input-ctrl"></div>
+                <div class="input-group"><label>Cédula de Identidad</label><input type="text" id="rIdDoc" class="input-ctrl"></div>
+            </div>
+
+            <button class="btn-action" onclick="saveUser()">Finalizar Registro</button>
         </div>
     </div>
     {% endif %}
 
     <script>
-        function toggleModal(show) { document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; }
-        
-        function showTab(tab) {
-            document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-            event.target.classList.add('active');
-        }
+        lucide.createIcons();
 
-        function toggleRegFields() {
-            const role = document.getElementById('reg-role').value;
-            document.getElementById('partner-fields').style.display = role === 'partner' ? 'block' : 'none';
-            document.getElementById('membresia-fields').style.display = role === 'membresia' ? 'block' : 'none';
+        function openModal() { document.getElementById('regModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('regModal').style.display = 'none'; }
+        function toggleForm() {
+            const role = document.getElementById('rRole').value;
+            document.getElementById('p-fields').style.display = role === 'partner' ? 'block' : 'none';
+            document.getElementById('m-fields').style.display = role === 'membresia' ? 'block' : 'none';
         }
 
         async function saveUser() {
             const data = {
-                username: document.getElementById('reg-user').value,
-                password: document.getElementById('reg-pass').value,
-                role: document.getElementById('reg-role').value,
-                group_name: document.getElementById('reg-group').value,
-                shooter_id: document.getElementById('reg-id').value,
-                school_name: document.getElementById('reg-school').value,
-                location: document.getElementById('reg-loc').value || document.getElementById('reg-suc').value
+                username: document.getElementById('rUser').value,
+                password: document.getElementById('rPass').value,
+                role: document.getElementById('rRole').value,
+                group_name: document.getElementById('rGrp').value,
+                shooter_id: document.getElementById('rIdDoc').value,
+                location: document.getElementById('rLoc').value || document.getElementById('rSuc').value
             };
-            const resp = await fetch('/register_user', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
+            const resp = await fetch('/register_user', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            if(resp.ok) { alert("Usuario Creado"); location.reload(); }
+        }
+
+        // --- MOTOR DE FILTRADO Y ORDEN ---
+        const filters = ['dateFrom', 'dateTo', 'searchID', 'searchStation', 'searchScenario'];
+        filters.forEach(id => document.getElementById(id)?.addEventListener('input', runFilters));
+
+        function runFilters() {
+            const dFrom = document.getElementById('dateFrom').value;
+            const dTo = document.getElementById('dateTo').value;
+            const sID = document.getElementById('searchID').value.toLowerCase();
+            const sStat = document.getElementById('searchStation').value.toLowerCase();
+            const sScen = document.getElementById('searchScenario').value.toLowerCase();
+
+            document.querySelectorAll('.data-row').forEach(row => {
+                const date = row.dataset.date;
+                const matchDate = (!dFrom || date >= dFrom) && (!dTo || date <= dTo);
+                const matchID = row.cells[3].textContent.toLowerCase().includes(sID);
+                const matchStat = row.cells[1].textContent.toLowerCase().includes(sStat);
+                const matchScen = row.cells[5].textContent.toLowerCase().includes(sScen);
+
+                row.style.display = (matchDate && matchID && matchStat && matchScen) ? '' : 'none';
             });
-            if(resp.ok) { alert("Perfil Creado"); toggleModal(false); }
+        }
+
+        function sortTable(asc) {
+            const body = document.getElementById('tableBody');
+            const rows = Array.from(body.querySelectorAll('.data-row'));
+            rows.sort((a, b) => asc ? b.dataset.score - a.dataset.score : a.dataset.score - b.dataset.score);
+            rows.forEach(r => body.appendChild(r));
+        }
+
+        function resetFilters() {
+            filters.forEach(id => document.getElementById(id).value = '');
+            runFilters();
         }
     </script>
 </body>
