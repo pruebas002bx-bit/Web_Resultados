@@ -132,91 +132,136 @@ def generate_pdf():
     if session['role'] != 'partner': return "Acceso Denegado", 403
     
     s_id = request.args.get('id', '').strip()
-    d_from_str = request.args.get('from', '').strip() # Viene YYYY-MM-DD
-    d_to_str = request.args.get('to', '').strip()     # Viene YYYY-MM-DD
+    d_from_str = request.args.get('from', '').strip()
+    d_to_str = request.args.get('to', '').strip()
     filter_val = session.get('filter_val', '').strip()
     
-    # 1. Traemos todos los registros del tirador para este partner
+    # 1. Filtrado de registros
     all_records = ScoreRecord.query.filter(
         func.lower(ScoreRecord.group_name) == func.lower(filter_val),
         ScoreRecord.shooter_id == s_id
     ).all()
     
-    # 2. Filtrado Lógico de Fechas en Python (Más seguro para formato DD/MM/YYYY)
     records = []
     try:
         limit_from = datetime.strptime(d_from_str, '%Y-%m-%d') if d_from_str else None
         limit_to = datetime.strptime(d_to_str, '%Y-%m-%d') if d_to_str else None
-        
         for r in all_records:
-            # Extraer solo la fecha del timestamp "18/03/2026 02:45:10"
-            r_date_str = r.timestamp.split(' ')[0]
-            r_date = datetime.strptime(r_date_str, '%d/%m/%Y')
-            
+            r_date = datetime.strptime(r.timestamp.split(' ')[0], '%d/%m/%Y')
             if limit_from and r_date < limit_from: continue
             if limit_to and r_date > limit_to: continue
             records.append(r)
-    except Exception as e:
-        print(f"Error procesando fechas: {e}")
+    except: pass
 
-    if not records:
-        return f"No hay datos para el ID {s_id} en el rango seleccionado.", 404
+    if not records: return "No hay registros para este rango.", 404
 
+    # 2. Cálculos y Gráfica
+    scores = [r.score for r in records]
+    scores_str = ",".join(map(str, scores))
+    avg = sum(scores)/len(scores)
+    # URL de Gráfica Profesional (Google Charts)
+    chart_url = f"https://chart.googleapis.com/chart?cht=lc&chs=600x200&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5"
+
+    # 3. Construcción del PDF Triple A
     class TacticPDF(FPDF):
         def header(self):
+            # Franja Superior Roja
             self.set_fill_color(185, 28, 28)
-            self.rect(0, 0, 215, 30, 'F')
-            self.set_font('helvetica', 'B', 20)
+            self.rect(0, 0, 215, 35, 'F')
+            # Logo (Opcional si carga)
+            try: self.image('https://i.ibb.co/j9Pp0YLz/Logo-2.png', 10, 8, 25)
+            except: pass
+            # Títulos
             self.set_text_color(255, 255, 255)
-            self.cell(0, 15, 'EXPEDIENTE TACTICO ALPHA', align='C', ln=True)
-            self.ln(10)
+            self.set_font('helvetica', 'B', 22)
+            self.cell(0, 12, 'EXPEDIENTE TÁCTICO DE RENDIMIENTO', align='R', ln=True)
+            self.set_font('helvetica', 'B', 8)
+            self.cell(0, 5, 'SISTEMA ALPHA CLOUD - REPORTE OFICIAL CONFIDENCIAL', align='R', ln=True)
+            self.ln(15)
 
     pdf = TacticPDF()
     pdf.add_page()
     
+    # --- SECCIÓN: INFORMACIÓN DEL OPERADOR (Tarjetas) ---
+    pdf.set_font('helvetica', 'B', 10)
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font('helvetica', 'B', 12)
-    pdf.cell(190, 10, f" OPERADOR: {records[0].shooter_name.upper()}", ln=True, border='B')
+    pdf.cell(190, 10, 'I. DATOS DEL OPERADOR Y TELEMETRÍA GLOBAL', ln=True)
     
-    pdf.set_font('helvetica', '', 10)
-    pdf.ln(5)
-    scores = [r.score for r in records]
+    # Dibujar Cajas de Estadísticas
+    pdf.set_fill_color(249, 250, 251)
+    pdf.rect(10, 55, 190, 30, 'F') # Fondo gris claro
     
-    pdf.cell(95, 8, f"Identificacion: {s_id}")
-    pdf.cell(95, 8, f"Grupo: {filter_val.upper()}", ln=True)
-    pdf.cell(95, 8, f"Puntaje Maximo: {max(scores)}")
-    pdf.cell(95, 8, f"Promedio: {sum(scores)/len(scores):.2f}%", ln=True)
+    pdf.set_font('helvetica', 'B', 9)
+    pdf.set_text_color(185, 28, 28)
+    pdf.cell(47, 8, 'NOMBRE DEL TIRADOR', align='C')
+    pdf.cell(47, 8, 'IDENTIFICACIÓN', align='C')
+    pdf.cell(47, 8, 'GRUPO / EMPRESA', align='C')
+    pdf.cell(49, 8, 'FECHA REPORTE', align='C', ln=True)
+    
+    pdf.set_font('helvetica', '', 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(47, 8, records[0].shooter_name.upper(), align='C')
+    pdf.cell(47, 8, s_id, align='C')
+    pdf.cell(47, 8, filter_val.upper(), align='C')
+    pdf.cell(49, 8, datetime.now().strftime("%d/%m/%Y"), align='C', ln=True)
+    
+    # --- SECCIÓN: GRÁFICA DE DESEMPEÑO ---
+    pdf.ln(15)
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.cell(190, 10, 'II. ANÁLISIS DE PROGRESO (CURVA DE PUNTAJE)', ln=True)
+    try:
+        pdf.image(chart_url, x=15, w=180)
+    except:
+        pdf.cell(190, 10, "[Gráfica no disponible]", align='C', ln=True)
     
     pdf.ln(10)
+    # Resumen numérico
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 10)
-    pdf.cell(50, 10, 'FECHA', fill=True, align='C')
+    pdf.cell(63, 10, f"MÁXIMO: {max(scores)}", border=1, align='C', fill=True)
+    pdf.cell(63, 10, f"PROMEDIO: {avg:.2f}%", border=1, align='C', fill=True)
+    pdf.cell(64, 10, f"SESIONES: {len(records)}", border=1, align='C', fill=True, ln=True)
+
+    # --- SECCIÓN: TABLA DE RESULTADOS ---
+    pdf.ln(10)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, 'III. DESGLOSE DETALLADO DE SESIONES', ln=True)
+    
+    pdf.set_fill_color(185, 28, 28)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(50, 10, 'FECHA Y HORA', fill=True, align='C')
     pdf.cell(75, 10, 'ESCENARIO', fill=True, align='C')
-    pdf.cell(35, 10, 'ESTACION', fill=True, align='C')
+    pdf.cell(35, 10, 'ESTACIÓN', fill=True, align='C')
     pdf.cell(30, 10, 'PUNTAJE', fill=True, align='C', ln=True)
     
     pdf.set_text_color(0, 0, 0)
     pdf.set_font('helvetica', '', 9)
     for r in records:
-        pdf.cell(50, 8, r.timestamp.split(' ')[0], border='B', align='C')
-        pdf.cell(75, 8, r.scenario[:28].upper(), border='B', align='C')
-        pdf.cell(35, 8, r.sim_id[:15], border='B', align='C')
-        pdf.cell(30, 8, str(r.score), border='B', align='C', ln=True)
+        # Colorear fila si es puntaje alto
+        if r.score >= 90: pdf.set_fill_color(254, 242, 242)
+        else: pdf.set_fill_color(255, 255, 255)
+        
+        pdf.cell(50, 8, r.timestamp, border='B', align='C', fill=True)
+        pdf.cell(75, 8, r.scenario[:28].upper(), border='B', align='C', fill=True)
+        pdf.cell(35, 8, r.sim_id[:15], border='B', align='C', fill=True)
+        pdf.set_font('helvetica', 'B', 9)
+        pdf.cell(30, 8, str(r.score), border='B', align='C', fill=True, ln=True)
+        pdf.set_font('helvetica', '', 9)
 
+    # --- FIRMAS ---
     pdf.ln(30)
-    pdf.cell(95, 5, '_________________________', align='C')
-    pdf.cell(95, 5, '_________________________', align='C', ln=True)
-    pdf.cell(95, 5, 'FIRMA DEL TIRADOR', align='C')
-    pdf.cell(95, 5, 'FIRMA INSTRUCTOR', align='C')
+    y_sig = pdf.get_y()
+    pdf.line(20, y_sig, 85, y_sig)
+    pdf.line(125, y_sig, 190, y_sig)
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(95, 5, 'FIRMA DEL OPERADOR', align='C')
+    pdf.cell(95, 5, f'CERTIFICACIÓN: {filter_val.upper()}', align='C', ln=True)
 
-    # CRITICO: Convertir bytearray a bytes para evitar el TypeError y el 502
-    pdf_output = bytes(pdf.output())
-    
-    response = make_response(pdf_output)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename=Reporte_{s_id}.pdf'
-    return response
+    # Convertir bytearray a bytes para evitar Error 502
+    return make_response(bytes(pdf.output()))
+
+
 
 @app.route('/api/upload_score', methods=['POST'])
 def upload_score():
