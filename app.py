@@ -8,6 +8,8 @@ from functools import wraps
 from io import BytesIO
 from xhtml2pdf import pisa
 from sqlalchemy import func
+from fpdf import FPDF
+
 
 app = Flask(__name__)
 app.secret_key = "alpha_tactical_ultra_secret"
@@ -141,31 +143,84 @@ def generate_pdf():
     records = query.order_by(ScoreRecord.timestamp.asc()).all()
     if not records: return "No se encontraron registros", 404
 
-    # --- PROCESAMIENTO PARA GRÁFICA ---
-    scores = [r.score for r in records]
-    # Creamos una cadena de texto de los puntajes para la URL de Google Charts
-    scores_str = ",".join(map(str, scores))
-    
-    stats = {
-        "count": len(records),
-        "max": max(scores),
-        "min": min(scores),
-        "avg": round(sum(scores)/len(scores), 2),
-        "shooter": records[0].shooter_name,
-        "id": s_id,
-        "group": session['filter_val'],
-        "date_gen": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "period": f"{d_from} a {d_to}" if d_from and d_to else "HISTORIAL COMPLETO",
-        "chart_url": f"https://chart.googleapis.com/chart?cht=lc&chs=700x200&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5"
-    }
+    # --- LÓGICA DE GENERACIÓN PDF PROFESIONAL ---
+    class TacticPDF(FPDF):
+        def header(self):
+            # Logo y Título
+            self.image('https://i.ibb.co/j9Pp0YLz/Logo-2.png', 10, 8, 33)
+            self.set_font('helvetica', 'B', 20)
+            self.set_text_color(0, 0, 0)
+            self.cell(80)
+            self.cell(100, 10, 'EXPEDIENTE TÁCTICO ALPHA', border=0, align='R')
+            self.ln(5)
+            self.set_font('helvetica', 'B', 8)
+            self.set_text_color(185, 28, 28) # Rojo
+            self.cell(180, 10, 'DOCUMENTO OFICIAL DE EVALUACIÓN - CONFIDENCIAL', align='R')
+            self.ln(20)
+            self.set_draw_color(185, 28, 28)
+            self.line(10, 35, 200, 35)
 
-    rendered = render_template('pdf_template.html', records=records, stats=stats)
-    pdf = BytesIO()
-    pisa.CreatePDF(BytesIO(rendered.encode("UTF-8")), dest=pdf)
+    pdf = TacticPDF()
+    pdf.add_page()
     
-    response = make_response(pdf.getvalue())
+    # Datos del Tirador
+    pdf.set_fill_color(0, 0, 0)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font('helvetica', 'B', 12)
+    pdf.cell(190, 10, ' RESUMEN DE INTELIGENCIA Y RENDIMIENTO', ln=True, fill=True)
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('helvetica', '', 10)
+    pdf.ln(5)
+    
+    scores = [r.score for r in records]
+    avg = sum(scores)/len(scores)
+    
+    # Cuadro de datos
+    pdf.cell(95, 8, f"Tirador: {records[0].shooter_name.upper()}", border='B')
+    pdf.cell(95, 8, f"ID: {s_id}", border='B', ln=True)
+    pdf.cell(95, 8, f"Grupo: {session['filter_val']}", border='B')
+    pdf.cell(95, 8, f"Sesiones: {len(records)}", border='B', ln=True)
+    
+    pdf.ln(5)
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.cell(47, 10, f"MAX: {max(scores)}", border=1, align='C')
+    pdf.cell(47, 10, f"MIN: {min(scores)}", border=1, align='C')
+    pdf.set_text_color(185, 28, 28)
+    pdf.cell(47, 10, f"PROMEDIO: {avg:.2f}%", border=1, align='C')
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(49, 10, f"ESTADO: {'CALIFICADO' if avg >= 80 else 'EN REPASO'}", border=1, align='C', ln=True)
+
+    # Tabla de Resultados
+    pdf.ln(10)
+    pdf.set_fill_color(185, 28, 28)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(50, 10, 'FECHA', fill=True, align='C')
+    pdf.cell(70, 10, 'ESCENARIO', fill=True, align='C')
+    pdf.cell(40, 10, 'ESTACIÓN', fill=True, align='C')
+    pdf.cell(30, 10, 'PUNTAJE', fill=True, align='C', ln=True)
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('helvetica', '', 9)
+    for r in records:
+        pdf.cell(50, 8, r.timestamp, border='B', align='C')
+        pdf.cell(70, 8, r.scenario[:25].upper(), border='B', align='C')
+        pdf.cell(40, 8, r.sim_id, border='B', align='C')
+        pdf.set_font('helvetica', 'B', 9)
+        pdf.cell(30, 8, str(r.score), border='B', align='C', ln=True)
+        pdf.set_font('helvetica', '', 9)
+
+    # Firmas
+    pdf.ln(30)
+    pdf.line(20, pdf.get_y(), 80, pdf.get_y())
+    pdf.line(130, pdf.get_y(), 190, pdf.get_y())
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(95, 5, 'FIRMA DEL TIRADOR', align='C')
+    pdf.cell(95, 5, f'CERTIFICACIÓN: {session["filter_val"]}', align='C', ln=True)
+
+    response = make_response(pdf.output())
     response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename=REPORT_TACTICAL_{s_id}.pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=Reporte_Alpha_{s_id}.pdf'
     return response
 
 @app.route('/api/upload_score', methods=['POST'])
