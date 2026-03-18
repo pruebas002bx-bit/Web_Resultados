@@ -129,12 +129,10 @@ def dashboard():
 @app.route('/generate_pdf')
 @login_required
 def generate_pdf():
-    import sys
-    sys.setrecursionlimit(5000) # FIX: Aumenta el límite para que Matplotlib no colapse en Render
     import io
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
+    import json
+    import urllib.parse
+    import requests
     
     if session['role'] != 'partner': return "Acceso Denegado", 403
     
@@ -164,35 +162,56 @@ def generate_pdf():
 
     scores = [r.score for r in records]
     avg = sum(scores)/len(scores)
-    
-    # --- MÉTODO LOCAL: GRÁFICA INTERNA (Matplotlib) ---
-    chart_data = io.BytesIO()
-    try:
-        plt.figure(figsize=(10, 3.5))
-        x_labels = [f"M{i+1}" for i in range(len(scores))]
-        
-        plt.plot(x_labels, scores, color='#B91C1C', marker='o', linewidth=2.5, markersize=7)
-        plt.fill_between(x_labels, scores, color='#B91C1C', alpha=0.1)
-        
-        plt.ylim(0, 105)
-        plt.ylabel("Puntaje Logrado", fontsize=10, fontweight='bold', color='#333333')
-        plt.grid(True, linestyle='--', alpha=0.4)
-        
-        for spine in plt.gca().spines.values():
-            spine.set_color('#DDDDDD')
-            
-        plt.tight_layout()
-        plt.savefig(chart_data, format='png', dpi=150, transparent=False)
-        plt.close()
-        chart_data.seek(0)
-    except Exception as e:
-        print(f"Error Matplotlib: {e}")
-        chart_data = None
+    labels = [f"M{i+1}" for i in range(len(scores))]
 
+    # --- MÉTODO ROBUSTO: GRÁFICA VÍA API (Sin colapsar el servidor) ---
+    chart_data = None
+    try:
+        # Configuración de QuickChart Nivel AAA
+        chart_config = {
+            "type": "line",
+            "data": {
+                "labels": labels,
+                "datasets": [{
+                    "label": "Puntaje",
+                    "data": scores,
+                    "borderColor": "#B91C1C",
+                    "backgroundColor": "rgba(185, 28, 28, 0.15)",
+                    "borderWidth": 3,
+                    "fill": True,
+                    "pointBackgroundColor": "#000000",
+                    "pointRadius": 4
+                }]
+            },
+            "options": {
+                "plugins": { "legend": { "display": False } },
+                "scales": { "y": { "min": 0, "max": 100 } }
+            }
+        }
+        
+        # Convertir JSON a formato seguro para URL
+        encoded_config = urllib.parse.quote(json.dumps(chart_config))
+        chart_url = f"https://quickchart.io/chart?w=700&h=250&bkg=white&c={encoded_config}"
+        
+        # Petición GET limpia y rápida
+        res = requests.get(chart_url, timeout=8)
+        if res.status_code == 200:
+            chart_data = io.BytesIO(res.content)
+        else:
+            # Plan B: Google Charts si QuickChart falla
+            scores_str = ",".join(map(str, scores))
+            g_url = f"https://chart.googleapis.com/chart?cht=lc&chs=700x250&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5&chds=a"
+            g_res = requests.get(g_url, timeout=8)
+            if g_res.status_code == 200:
+                chart_data = io.BytesIO(g_res.content)
+    except Exception as e:
+        print(f"Error generando grafica API: {e}")
+
+    # --- GENERACIÓN DEL PDF ---
     class TacticPDF(FPDF):
         def header(self):
+            # FONDO BLANCO PARA EL LOGO
             try: 
-                import requests
                 logo_res = requests.get('https://i.ibb.co/j9Pp0YLz/Logo-2.png', timeout=5)
                 if logo_res.status_code == 200:
                     self.image(io.BytesIO(logo_res.content), 10, 8, 40, name="logo.png")
@@ -271,12 +290,13 @@ def generate_pdf():
     
     if chart_data:
         try:
-            pdf.image(chart_data, x=15, w=180, name="graficamatplot.png")
+            # El atributo name="grafica.png" permite incrustar la imagen en memoria
+            pdf.image(chart_data, x=15, w=180, name="grafica.png")
             pdf.ln(2)
         except Exception as e:
             print("Error imprimiendo grafica en PDF:", e)
             pdf.set_text_color(100, 100, 100)
-            pdf.cell(190, 30, "[Error interno al plasmar la grafica]", border=1, align='C', ln=True)
+            pdf.cell(190, 30, "[Error al plasmar la grafica]", border=1, align='C', ln=True)
             pdf.ln(5)
     else:
         pdf.set_text_color(100, 100, 100)
