@@ -130,29 +130,41 @@ def dashboard():
 def generate_pdf():
     if session['role'] != 'partner': return "Acceso Denegado", 403
     
-    s_id = request.args.get('id')
-    d_from = request.args.get('from')
-    d_to = request.args.get('to')
+    # Obtenemos parámetros eliminando espacios en blanco
+    s_id = request.args.get('id', '').strip()
+    d_from = request.args.get('from', '').strip()
+    d_to = request.args.get('to', '').strip()
+    filter_val = session.get('filter_val', '').strip()
     
-    query = ScoreRecord.query.filter_by(group_name=session['filter_val'], shooter_id=s_id)
-    if d_from: query = query.filter(ScoreRecord.timestamp >= d_from)
-    if d_to: query = query.filter(ScoreRecord.timestamp <= d_to + " 23:59:59")
+    # Consulta robusta: Ignora mayúsculas en el nombre del grupo para evitar errores de coincidencia
+    query = ScoreRecord.query.filter(
+        func.lower(ScoreRecord.group_name) == func.lower(filter_val),
+        ScoreRecord.shooter_id == s_id
+    )
+    
+    # Aplicar filtros de fecha solo si se han seleccionado
+    if d_from:
+        query = query.filter(ScoreRecord.timestamp >= f"{d_from} 00:00:00")
+    if d_to:
+        query = query.filter(ScoreRecord.timestamp <= f"{d_to} 23:59:59")
     
     records = query.order_by(ScoreRecord.timestamp.asc()).all()
-    if not records: return "No se encontraron registros", 404
+    
+    if not records:
+        return f"No se encontraron registros para ID: {s_id} en el rango {d_from} a {d_to}", 404
 
-    # --- LÓGICA DE GENERACIÓN PDF PROFESIONAL ---
+    # --- LÓGICA DE GENERACIÓN PDF PROFESIONAL (FPDF2) ---
     class TacticPDF(FPDF):
         def header(self):
-            # Logo y Título
-            self.image('https://i.ibb.co/j9Pp0YLz/Logo-2.png', 10, 8, 33)
+            # Intentar cargar logo, si falla continúa sin imagen
+            try: self.image('https://i.ibb.co/j9Pp0YLz/Logo-2.png', 10, 8, 33)
+            except: pass
             self.set_font('helvetica', 'B', 20)
-            self.set_text_color(0, 0, 0)
             self.cell(80)
-            self.cell(100, 10, 'EXPEDIENTE TÁCTICO ALPHA', border=0, align='R')
+            self.cell(100, 10, 'EXPEDIENTE TÁCTICO ALPHA', align='R')
             self.ln(5)
             self.set_font('helvetica', 'B', 8)
-            self.set_text_color(185, 28, 28) # Rojo
+            self.set_text_color(185, 28, 28)
             self.cell(180, 10, 'DOCUMENTO OFICIAL DE EVALUACIÓN - CONFIDENCIAL', align='R')
             self.ln(20)
             self.set_draw_color(185, 28, 28)
@@ -161,12 +173,13 @@ def generate_pdf():
     pdf = TacticPDF()
     pdf.add_page()
     
-    # Datos del Tirador
+    # Encabezado de sección
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 12)
     pdf.cell(190, 10, ' RESUMEN DE INTELIGENCIA Y RENDIMIENTO', ln=True, fill=True)
     
+    # Datos generales
     pdf.set_text_color(0, 0, 0)
     pdf.set_font('helvetica', '', 10)
     pdf.ln(5)
@@ -174,11 +187,10 @@ def generate_pdf():
     scores = [r.score for r in records]
     avg = sum(scores)/len(scores)
     
-    # Cuadro de datos
     pdf.cell(95, 8, f"Tirador: {records[0].shooter_name.upper()}", border='B')
     pdf.cell(95, 8, f"ID: {s_id}", border='B', ln=True)
-    pdf.cell(95, 8, f"Grupo: {session['filter_val']}", border='B')
-    pdf.cell(95, 8, f"Sesiones: {len(records)}", border='B', ln=True)
+    pdf.cell(95, 8, f"Grupo: {filter_val.upper()}", border='B')
+    pdf.cell(95, 8, f"Periodo: {d_from if d_from else 'Inicio'} / {d_to if d_to else 'Actual'}", border='B', ln=True)
     
     pdf.ln(5)
     pdf.set_font('helvetica', 'B', 10)
@@ -187,38 +199,40 @@ def generate_pdf():
     pdf.set_text_color(185, 28, 28)
     pdf.cell(47, 10, f"PROMEDIO: {avg:.2f}%", border=1, align='C')
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(49, 10, f"ESTADO: {'CALIFICADO' if avg >= 80 else 'EN REPASO'}", border=1, align='C', ln=True)
+    pdf.cell(49, 10, f"SESIONES: {len(records)}", border=1, align='C', ln=True)
 
     # Tabla de Resultados
     pdf.ln(10)
     pdf.set_fill_color(185, 28, 28)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(50, 10, 'FECHA', fill=True, align='C')
-    pdf.cell(70, 10, 'ESCENARIO', fill=True, align='C')
-    pdf.cell(40, 10, 'ESTACIÓN', fill=True, align='C')
+    pdf.cell(50, 10, 'FECHA Y HORA', fill=True, align='C')
+    pdf.cell(75, 10, 'ESCENARIO', fill=True, align='C')
+    pdf.cell(35, 10, 'ESTACIÓN', fill=True, align='C')
     pdf.cell(30, 10, 'PUNTAJE', fill=True, align='C', ln=True)
     
     pdf.set_text_color(0, 0, 0)
     pdf.set_font('helvetica', '', 9)
     for r in records:
         pdf.cell(50, 8, r.timestamp, border='B', align='C')
-        pdf.cell(70, 8, r.scenario[:25].upper(), border='B', align='C')
-        pdf.cell(40, 8, r.sim_id, border='B', align='C')
+        pdf.cell(75, 8, r.scenario[:28].upper(), border='B', align='C')
+        pdf.cell(35, 8, r.sim_id, border='B', align='C')
         pdf.set_font('helvetica', 'B', 9)
         pdf.cell(30, 8, str(r.score), border='B', align='C', ln=True)
         pdf.set_font('helvetica', '', 9)
 
-    # Firmas
-    pdf.ln(30)
-    pdf.line(20, pdf.get_y(), 80, pdf.get_y())
-    pdf.line(130, pdf.get_y(), 190, pdf.get_y())
+    # Espacio para Firmas
+    pdf.ln(35)
+    y_sig = pdf.get_y()
+    pdf.line(20, y_sig, 85, y_sig)
+    pdf.line(125, y_sig, 190, y_sig)
     pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(95, 5, 'FIRMA DEL TIRADOR', align='C')
-    pdf.cell(95, 5, f'CERTIFICACIÓN: {session["filter_val"]}', align='C', ln=True)
+    pdf.cell(95, 5, 'FIRMA DEL TIRADOR EVALUADO', align='C')
+    pdf.cell(95, 5, f'CERTIFICACIÓN: {filter_val.upper()}', align='C', ln=True)
 
+    # Retornar el archivo PDF
     response = make_response(pdf.output())
     response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename=Reporte_Alpha_{s_id}.pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=Reporte_Tactico_{s_id}.pdf'
     return response
 
 @app.route('/api/upload_score', methods=['POST'])
