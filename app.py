@@ -1,11 +1,18 @@
 import os
 import ssl
 import io
+import csv
+import json
+import base64
+import hashlib
+import urllib.parse
+import requests
+from datetime import datetime, timedelta
+from functools import wraps
+
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import datetime
-from functools import wraps
 from sqlalchemy import func
 from fpdf import FPDF
 
@@ -35,6 +42,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# --- MODELOS DE BASE DE DATOS ---
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -43,9 +52,8 @@ class User(db.Model):
     group_name = db.Column(db.String(100), nullable=True) 
     shooter_id = db.Column(db.String(50), nullable=True)
     location = db.Column(db.String(100), nullable=True)
-    logo_url = db.Column(db.String(255), nullable=True) # <-- NUEVO CAMPO PARA EL LOGO
+    logo_url = db.Column(db.String(255), nullable=True)
 
-# (Mantén ScoreRecord igual...)
 class ScoreRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sim_id = db.Column(db.String(100), nullable=False)
@@ -61,10 +69,31 @@ class Booking(db.Model):
     title = db.Column(db.String(100), nullable=False)
     start_datetime = db.Column(db.String(50), nullable=False)
     end_datetime = db.Column(db.String(50), nullable=False)
-    user_assigned = db.Column(db.String(100), nullable=True) # Usuario o Partner asignado
+    user_assigned = db.Column(db.String(100), nullable=True)
     description = db.Column(db.Text, nullable=True)
 
+class AdContent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(20)) # 'banner_left', 'banner_right', 'modal'
+    image_url = db.Column(db.String(500))
+    active = db.Column(db.Boolean, default=True)
 
+
+# --- CONTEXT PROCESSOR (PUBLICIDAD GLOBAL) ---
+@app.context_processor
+def inject_ads():
+    try:
+        ads = AdContent.query.filter_by(active=True).all()
+        ad_dict = {ad.type: ad.image_url for ad in ads if ad.image_url and ad.image_url.strip()}
+        return dict(ads=ad_dict)
+    except:
+        try: 
+            db.create_all()
+        except: 
+            pass
+        return dict(ads={})
+
+# --- INICIALIZACIÓN ---
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username="admin").first():
@@ -72,7 +101,7 @@ with app.app_context():
         db.session.add(admin)
         db.session.commit()
 
-# --- RUTAS ---
+# --- DECORADOR AUTENTICACIÓN ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -80,6 +109,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# --- RUTAS DE ACCESO ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -99,29 +129,10 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-@app.route('/register_user', methods=['POST'])
-@login_required
-def register_user():
-    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
-    data = request.json
-    try:
-        new_user = User(
-            username=data['username'], password=data['password'], role=data['role'],
-            group_name=data.get('group_name'), shooter_id=data.get('shooter_id'),
-            location=data.get('location'), logo_url=data.get('logo_url') # <-- SE GUARDA AQUÍ
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify({"status": "success"})
-    except Exception as e: 
-        print(f"Error registrando usuario: {e}")
-        return jsonify({"status": "error"}), 400
-
-
+# --- RUTAS DE DASHBOARD Y USUARIOS ---
 @app.route('/')
 @login_required
 def dashboard():
-    import json
     role = session['role']
     query = ScoreRecord.query
     unique_shooters = []
@@ -140,16 +151,99 @@ def dashboard():
         
     chart_data = []
     for r in records:
-        chart_data.append({'score': r.score, 'scenario': r.scenario, 'timestamp': r.timestamp, 'shooter_name': r.shooter_name})
+        chart_data.append({
+            'score': r.score, 'scenario': r.scenario,
+            'timestamp': r.timestamp, 'shooter_name': r.shooter_name
+        })
         
-    # Traemos todos los usuarios Partner y Membresías para que el admin pueda agendarles
     users_list = User.query.filter(User.role.in_(['partner', 'membresia'])).all()
         
     return render_template('dashboard.html', records=records, role=role, 
                            username=session['username'], shooters=unique_shooters, 
                            partners=partners, chart_data=json.dumps(chart_data), users_list=users_list)
 
-# --- RUTAS DEL CALENDARIO ---
+@app.route('/register_user', methods=['POST'])
+@login_required
+def register_user():
+    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
+    data = request.json
+    try:
+        new_user = User(
+            username=data['username'], password=data['password'], role=data['role'],
+            group_name=data.get('group_name'), shooter_id=data.get('shooter_id'),
+            location=data.get('location'), logo_url=data.get('logo_url')
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    except Exception as e: 
+        print(f"Error registrando usuario: {e}")
+        return jsonify({"status": "error"}), 400
+
+@app.route('/edit_partner', methods=['POST'])
+@login_required
+def edit_partner():
+    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
+    data = request.json
+    try:
+        partner = User.query.filter_by(id=int(data['user_id']), role='partner').first()
+        if partner:
+            if data.get('password'): partner.password = data['password']
+            if data.get('location'): partner.location = data['location']
+            if data.get('group_name'): partner.group_name = data['group_name']
+            if data.get('logo_url'): partner.logo_url = data['logo_url']
+            db.session.commit()
+            return jsonify({"status": "success"})
+        return jsonify({"status": "error"}), 404
+    except Exception as e: 
+        print(f"Error editando partner: {e}")
+        return jsonify({"status": "error"}), 500
+
+# --- RUTAS DE PUBLICIDAD ---
+@app.route('/update_ads', methods=['POST'])
+@login_required
+def update_ads():
+    if session.get('role') != 'admin': return jsonify({"status": "denied"}), 403
+    data = request.json
+    try:
+        AdContent.query.filter_by(type=data['type']).delete()
+        if data.get('image_url') and data['image_url'].strip():
+            new_ad = AdContent(type=data['type'], image_url=data['image_url'].strip())
+            db.session.add(new_ad)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        print("Error guardando publicidad:", e)
+        return jsonify({"status": "error"}), 500
+
+# --- RUTAS DE EXCEL ---
+@app.route('/download_excel')
+@login_required
+def download_excel():
+    if session['role'] != 'partner': return "Acceso Denegado", 403
+    
+    filter_val = session.get('filter_val', '').strip()
+    records = ScoreRecord.query.filter(
+        func.lower(ScoreRecord.group_name) == func.lower(filter_val)
+    ).order_by(ScoreRecord.id.desc()).all()
+
+    def generate():
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        output.write('\ufeff') # BOM para Excel
+        writer.writerow(['FECHA/HORA', 'ESTACION', 'NOMBRE TIRADOR', 'ID TIRADOR', 'ESCENARIO', 'PUNTAJE', 'GRUPO'])
+        
+        for r in records:
+            writer.writerow([r.timestamp, r.sim_id, r.shooter_name, r.shooter_id, r.scenario, r.score, r.group_name])
+            yield output.getvalue()
+            output.truncate(0)
+            output.seek(0)
+
+    response = make_response(app.response_class(generate(), mimetype='text/csv'))
+    response.headers["Content-Disposition"] = f"attachment; filename=Reporte_General_{filter_val}.csv"
+    return response
+
+# --- RUTAS DE CALENDARIO ---
 @app.route('/api/bookings', methods=['GET'])
 @login_required
 def get_bookings():
@@ -159,14 +253,13 @@ def get_bookings():
     is_admin = session['role'] == 'admin'
     
     for b in bookings:
-        # Lógica de Permisos
         if is_admin or b.user_assigned == current_username:
             title = f"{b.title} - ({b.user_assigned})" if is_admin else b.title
-            color = "#B91C1C" # Rojo Alpha para dueños/Admin
+            color = "#B91C1C"
             is_owner = True
         else:
             title = "HORARIO OCUPADO O ASIGNADO"
-            color = "#9CA3AF" # Gris para otras personas
+            color = "#9CA3AF"
             is_owner = False
             
         events.append({
@@ -186,14 +279,14 @@ def save_booking():
     if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
     data = request.json
     try:
-        if data.get('id'): # Editar existente
+        if data.get('id'):
             booking = Booking.query.get(data['id'])
             booking.title = data['title']
             booking.start_datetime = data['start']
             booking.end_datetime = data['end']
             booking.user_assigned = data['user_assigned']
             booking.description = data['description']
-        else: # Crear Nuevo
+        else:
             booking = Booking(title=data['title'], start_datetime=data['start'], end_datetime=data['end'], user_assigned=data['user_assigned'], description=data['description'])
             db.session.add(booking)
         db.session.commit()
@@ -210,35 +303,10 @@ def delete_booking(b_id):
         db.session.commit()
     return jsonify({"status": "success"})
 
-@app.route('/edit_partner', methods=['POST'])
-@login_required
-def edit_partner():
-    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
-    data = request.json
-    try:
-        # CORRECCIÓN AQUÍ: Convertimos data['user_id'] a int() para que PostgreSQL no falle
-        partner = User.query.filter_by(id=int(data['user_id']), role='partner').first()
-        
-        if partner:
-            # Si el campo tiene texto, se actualiza. Si viene vacío, se ignora.
-            if data.get('password'): partner.password = data['password']
-            if data.get('location'): partner.location = data['location']
-            if data.get('group_name'): partner.group_name = data['group_name']
-            if data.get('logo_url'): partner.logo_url = data['logo_url']
-            
-            db.session.commit()
-            return jsonify({"status": "success"})
-            
-        return jsonify({"status": "error"}), 404
-    except Exception as e: 
-        print(f"Error editando partner: {e}")
-        return jsonify({"status": "error"}), 500
-
-
+# --- RUTAS DE VERIFICACIÓN CRIPTOGRÁFICA ---
 @app.route('/api/verify_signature', methods=['POST'])
 @login_required
 def verify_signature():
-    import base64, hashlib
     if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
     
     sig = request.json.get('signature', '').strip().upper()
@@ -248,11 +316,9 @@ def verify_signature():
         
         sign_hash = parts[1]
         encoded_data = parts[2]
-        # Restaurar padding de Base32
         encoded_data += '=' * ((8 - len(encoded_data) % 8) % 8)
         raw_data = base64.b32decode(encoded_data).decode()
         
-        # Verificar que nadie alteró la firma
         expected_hash = hashlib.sha256((raw_data + app.secret_key).encode()).hexdigest()[:8].upper()
         if sign_hash != expected_hash: raise Exception()
         
@@ -271,59 +337,12 @@ def verify_signature():
     except:
         return jsonify({"status": "error", "message": "Firma digital inválida, alterada o no reconocida."})
 
-
-
-
-
-# --- NUEVO MODELO PARA PUBLICIDAD ---
-class AdContent(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String(20)) # 'banner_left', 'banner_right', 'modal'
-    image_url = db.Column(db.String(500))
-    active = db.Column(db.Boolean, default=True)
-
-# --- RUTAS DE GESTIÓN (Añadir en la sección de Admin) ---
-@app.route('/update_ads', methods=['POST'])
-@login_required
-def update_ads():
-    if session.get('role') != 'admin': return "No autorizado", 403
-    data = request.json
-    # Eliminar anteriores y guardar nuevas urls
-    AdContent.query.filter_by(type=data['type']).delete()
-    new_ad = AdContent(type=data['type'], image_url=data['image_url'])
-    db.session.add(new_ad)
-    db.session.commit()
-    return jsonify({"status": "success"})
-
-@app.context_processor
-def inject_ads():
-    try:
-        # Intenta cargar la publicidad
-        ads = AdContent.query.filter_by(active=True).all()
-        ad_dict = {ad.type: ad.image_url for ad in ads}
-        return dict(ads=ad_dict)
-    except Exception as e:
-        # Si la tabla no existe, evita que la app colapse y fuerza su creación
-        try:
-            db.create_all()
-        except:
-            pass
-        return dict(ads={})
-
-
-
-
-
-
-
+# --- GENERACIÓN DE PDF ---
 @app.route('/generate_pdf')
 @login_required
 def generate_pdf():
-    import io, json, urllib.parse, requests, hashlib, base64
-    
     sig = request.args.get('sig', '').strip()
     
-    # Si el admin envía una firma válida, desencriptamos los datos para descargar
     if sig and session['role'] == 'admin':
         try:
             parts = sig.split('-')
@@ -359,7 +378,7 @@ def generate_pdf():
 
     if not records: return "No hay registros para este rango.", 404
 
-    # --- CREACIÓN DE LA FIRMA DIGITAL ÚNICA ---
+    # CREACIÓN DE FIRMA
     raw_data = f"{s_id}::{d_from_str}::{d_to_str}::{filter_val}::{records[0].shooter_name}"
     encoded_data = base64.b32encode(raw_data.encode()).decode().replace('=', '')
     sign_hash = hashlib.sha256((raw_data + app.secret_key).encode()).hexdigest()[:8].upper()
@@ -385,7 +404,6 @@ def generate_pdf():
         }
         encoded_config = urllib.parse.quote(json.dumps(chart_config))
         chart_url = f"https://quickchart.io/chart?w=700&h=250&bkg=white&c={encoded_config}"
-        
         res = requests.get(chart_url, timeout=8)
         if res.status_code == 200:
             chart_data = io.BytesIO(res.content)
@@ -427,27 +445,22 @@ def generate_pdf():
             self.ln(12)
 
         def footer(self):
-            self.set_y(-25) # Aumentamos un poco el margen para que quepan las líneas
-            # Título de Seguridad
+            self.set_y(-25)
             self.set_font('helvetica', 'I', 6)
             self.set_text_color(128, 128, 128)
             self.cell(0, 4, 'CERTIFICADO DE AUTENTICIDAD CRIPTOGRÁFICA', align='C', ln=True)
             
-            # Texto descriptivo
             self.set_font('helvetica', '', 7)
             self.set_text_color(0, 0, 0)
-            self.cell(0, 4, 'Este documento está soportado por una firma digital inalterable:', align='C', ln=True)
+            self.cell(0, 4, 'Este documento esta soportado por una firma digital inalterable:', align='C', ln=True)
             
-            # Firma Digital con Multi_Cell para evitar que se corte
             self.set_font('helvetica', 'B', 7)
-            # multi_cell(ancho, alto_fila, texto, bordes, alineación)
             self.multi_cell(0, 3, alpha_signature, 0, 'C')
             
-            # Paginación normal
             self.set_y(-12)
             self.set_font('helvetica', 'I', 7)
             self.set_text_color(128, 128, 128)
-            self.cell(0, 4, f'Generado por Alpha Systems | Pagina {self.page_no()}', align='C')
+            self.cell(0, 4, f'Generado por Alpha Cloud Systems | Pagina {self.page_no()}', align='C')
 
     pdf = TacticPDF()
     pdf.add_page()
@@ -573,56 +586,12 @@ def generate_pdf():
         download_name=f"Expediente_Tactico_{s_id}.pdf"
     )
 
-
-@app.route('/download_excel')
-@login_required
-def download_excel():
-    import csv
-    if session['role'] != 'partner': return "Acceso Denegado", 403
-    
-    filter_val = session.get('filter_val', '').strip()
-    records = ScoreRecord.query.filter(
-        func.lower(ScoreRecord.group_name) == func.lower(filter_val)
-    ).order_by(ScoreRecord.id.desc()).all()
-
-    def generate():
-        # Crear un buffer en memoria
-        output = io.StringIO()
-        writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        
-        # Escribir BOM para que Excel reconozca caracteres especiales (tildes/ñ)
-        output.write('\ufeff')
-        
-        # Encabezados
-        writer.writerow(['FECHA/HORA', 'ESTACION', 'NOMBRE TIRADOR', 'ID TIRADOR', 'ESCENARIO', 'PUNTAJE', 'GRUPO'])
-        
-        for r in records:
-            writer.writerow([r.timestamp, r.sim_id, r.shooter_name, r.shooter_id, r.scenario, r.score, r.group_name])
-            yield output.getvalue()
-            output.truncate(0)
-            output.seek(0)
-
-    response = make_response(app.response_class(generate(), mimetype='text/csv'))
-    response.headers["Content-Disposition"] = f"attachment; filename=Reporte_General_{filter_val}.csv"
-    return response
-
-
-
-
-
-
-
-
+# --- RECOLECCIÓN DE DATA DEL SIMULADOR ---
 @app.route('/api/upload_score', methods=['POST'])
 def upload_score():
-    from datetime import timedelta
     try:
         data = request.json
-        
-        # Ajuste de Zona Horaria: Servidor Render (UTC) - 5 Horas (Colombia)
         hora_colombia = datetime.utcnow() - timedelta(hours=5)
-        
-        # Formato exacto: DD/MM/YYYY HH:MM AM/PM (Ej: 18/03/2026 04:41 AM)
         fecha_correcta = hora_colombia.strftime("%d/%m/%Y %I:%M %p")
         
         new_record = ScoreRecord(
@@ -639,6 +608,7 @@ def upload_score():
         return jsonify({"status": "success"}), 200
     except Exception as e: 
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
