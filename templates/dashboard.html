@@ -93,9 +93,8 @@
         .btn-sort { background: white; border: 1px solid #D1D5DB; padding: 8px 15px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 800; transition: 0.2s; color: #374151; }
         .btn-sort:hover { background: #F3F4F6; border-color: #9CA3AF; }
 
-        /* Tabla adaptada a móviles */
         .table-wrap { background: white; border-radius: 15px; overflow-x: auto; border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; /* Fuerza scroll si es pequeño */ }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th { background: var(--dark); color: white; padding: 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
         td { padding: 16px; text-align: center; font-weight: 700; border-bottom: 1px solid #E5E7EB; font-size: 13px; color: #111827; }
         tr:hover { background: #F9FAFB; }
@@ -212,6 +211,12 @@
             <button class="tab-btn" onclick="switchTab('calendar', event)">
                 <i data-lucide="calendar" style="width:16px; display:inline-block; vertical-align:middle;"></i> CALENDARIO
             </button>
+
+            {% if role == 'admin' %}
+            <button class="tab-btn" onclick="switchTab('verify', event)">
+                <i data-lucide="shield-check" style="width:16px; display:inline-block; vertical-align:middle;"></i> VERIFICAR FIRMA
+            </button>
+            {% endif %}
         </div>
 
         {% if role in ['partner', 'membresia'] %}
@@ -290,6 +295,37 @@
             </div>
             <div id="calendar"></div>
         </div>
+
+        {% if role == 'admin' %}
+        <div id="tab-verify" class="tab-content">
+            <div class="tactical-filters" style="max-width: 600px; margin: 40px auto; display: block; text-align: center;">
+                <i data-lucide="shield-check" style="width: 50px; height: 50px; color: var(--primary); margin-bottom: 15px;"></i>
+                <h2 style="font-weight: 900; margin-bottom: 10px;">CENTRO DE VERIFICACIÓN CRIPTOGRÁFICA</h2>
+                <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px;">Ingrese el código de firma digital que se encuentra en el pie de página del documento PDF para comprobar su autenticidad y origen.</p>
+                
+                <div class="input-group">
+                    <input type="text" id="vSignature" class="input-ctrl" placeholder="Ej: ALPHA-A1B2C3D4-XXXXX..." style="text-align: center; font-weight: bold; letter-spacing: 1px;">
+                </div>
+                <button class="btn-action" id="btnVerifySig">Verificar Autenticidad</button>
+                
+                <div id="verifyResult" style="display: none; margin-top: 25px; padding: 20px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; text-align: left;">
+                    <h3 style="color: #059669; font-weight: 900; margin-bottom: 15px; text-align: center;"><i data-lucide="check-circle" style="width:18px; vertical-align:middle;"></i> FIRMA DIGITAL VÁLIDA</h3>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Tirador:</strong> <span id="vrShooter"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Identificación:</strong> <span id="vrId"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Generado por (Partner):</strong> <span id="vrPartner" class="badge-group"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Filtro Desde:</strong> <span id="vrFrom"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 20px;"><strong>Filtro Hasta:</strong> <span id="vrTo"></span></p>
+                    
+                    <button class="btn-action" id="btnDownloadVerified" style="background: var(--primary); padding: 12px; font-size: 12px; display: flex; justify-content: center; gap: 8px;"><i data-lucide="download" style="width:16px;"></i> DESCARGAR PDF ORIGINAL</button>
+                </div>
+                
+                <div id="verifyError" style="display: none; margin-top: 20px; padding: 15px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 12px; color: #B91C1C; font-weight: bold; font-size: 13px;">
+                    <i data-lucide="alert-triangle" style="width:18px; vertical-align:middle;"></i> <span id="verifyErrorMsg">FIRMA INVÁLIDA O CORRUPTA.</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 
     <div class="modal" id="regModal">
@@ -407,8 +443,6 @@
             <button class="btn-action" id="btnDownloadPdf">GENERAR DOCUMENTO</button>
         </div>
     </div>
-
-    {% endif %}
 
     <script>
         // --- FUNCIÓN GLOBAL PARA CAMBIAR PESTAÑAS ---
@@ -793,7 +827,6 @@
                     const to = document.getElementById('pdfTo').value;
                     if(!id) return alert("Seleccione un tirador de la lista.");
                     
-                    // Abrir en la misma pestaña forzando descarga
                     window.location.href = `/generate_pdf?id=${id}&from=${from}&to=${to}`;
                 });
             }
@@ -850,6 +883,52 @@
             const btnSortLow = document.getElementById('sortLow');
             if(btnSortHigh) btnSortHigh.addEventListener('click', () => sortTable(true));
             if(btnSortLow) btnSortLow.addEventListener('click', () => sortTable(false));
+
+            // ================== LÓGICA DE VERIFICACIÓN DE FIRMA (ADMIN) ==================
+            const btnVerifySig = document.getElementById('btnVerifySig');
+            if(btnVerifySig) {
+                btnVerifySig.addEventListener('click', async () => {
+                    const sig = document.getElementById('vSignature').value;
+                    if(!sig) return alert("Ingrese un código de firma digital válido.");
+                    
+                    btnVerifySig.textContent = "Verificando Criptografía...";
+                    document.getElementById('verifyResult').style.display = 'none';
+                    document.getElementById('verifyError').style.display = 'none';
+                    
+                    try {
+                        const res = await fetch('/api/verify_signature', {
+                            method: 'POST', 
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({signature: sig})
+                        });
+                        
+                        const data = await res.json();
+                        btnVerifySig.textContent = "Verificar Autenticidad";
+                        
+                        if(data.status === 'success') {
+                            document.getElementById('vrShooter').textContent = data.data.shooter_name;
+                            document.getElementById('vrId').textContent = data.data.shooter_id;
+                            document.getElementById('vrPartner').textContent = data.data.partner.toUpperCase();
+                            document.getElementById('vrFrom').textContent = data.data.date_from;
+                            document.getElementById('vrTo').textContent = data.data.date_to;
+                            
+                            document.getElementById('btnDownloadVerified').onclick = () => {
+                                window.location.href = `/generate_pdf?sig=${encodeURIComponent(sig)}`;
+                            };
+                            
+                            document.getElementById('verifyResult').style.display = 'block';
+                            lucide.createIcons(); 
+                        } else {
+                            document.getElementById('verifyErrorMsg').textContent = data.message;
+                            document.getElementById('verifyError').style.display = 'block';
+                        }
+                    } catch (error) {
+                        btnVerifySig.textContent = "Verificar Autenticidad";
+                        document.getElementById('verifyErrorMsg').textContent = "Error de conexión con el servidor.";
+                        document.getElementById('verifyError').style.display = 'block';
+                    }
+                });
+            }
         });
     </script>
 </body>

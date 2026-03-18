@@ -235,20 +235,65 @@ def edit_partner():
         return jsonify({"status": "error"}), 500
 
 
+@app.route('/api/verify_signature', methods=['POST'])
+@login_required
+def verify_signature():
+    import base64, hashlib
+    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
+    
+    sig = request.json.get('signature', '').strip().upper()
+    try:
+        parts = sig.split('-')
+        if len(parts) != 3 or parts[0] != 'ALPHA': raise Exception()
+        
+        sign_hash = parts[1]
+        encoded_data = parts[2]
+        # Restaurar padding de Base32
+        encoded_data += '=' * ((8 - len(encoded_data) % 8) % 8)
+        raw_data = base64.b32decode(encoded_data).decode()
+        
+        # Verificar que nadie alteró la firma
+        expected_hash = hashlib.sha256((raw_data + app.secret_key).encode()).hexdigest()[:8].upper()
+        if sign_hash != expected_hash: raise Exception()
+        
+        s_id, d_from, d_to, filter_val, shooter_name = raw_data.split('::')
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "shooter_name": shooter_name,
+                "shooter_id": s_id,
+                "partner": filter_val,
+                "date_from": d_from or "Histórico Completo",
+                "date_to": d_to or "Día de Generación"
+            }
+        })
+    except:
+        return jsonify({"status": "error", "message": "Firma digital inválida, alterada o no reconocida."})
+
 @app.route('/generate_pdf')
 @login_required
 def generate_pdf():
-    import io
-    import json
-    import urllib.parse
-    import requests
+    import io, json, urllib.parse, requests, hashlib, base64
     
-    if session['role'] != 'partner': return "Acceso Denegado", 403
+    sig = request.args.get('sig', '').strip()
     
-    s_id = request.args.get('id', '').strip()
-    d_from_str = request.args.get('from', '').strip()
-    d_to_str = request.args.get('to', '').strip()
-    filter_val = session.get('filter_val', '').strip()
+    # Si el admin envía una firma válida, desencriptamos los datos para descargar
+    if sig and session['role'] == 'admin':
+        try:
+            parts = sig.split('-')
+            encoded_data = parts[2]
+            encoded_data += '=' * ((8 - len(encoded_data) % 8) % 8)
+            raw_data = base64.b32decode(encoded_data).decode()
+            s_id, d_from_str, d_to_str, filter_val, shooter_name = raw_data.split('::')
+        except:
+            return "Firma digital inválida o corrupta.", 400
+    else:
+        if session['role'] != 'partner': return "Acceso Denegado", 403
+        s_id = request.args.get('id', '').strip()
+        d_from_str = request.args.get('from', '').strip()
+        d_to_str = request.args.get('to', '').strip()
+        filter_val = session.get('filter_val', '').strip()
     
     all_records = ScoreRecord.query.filter(
         func.lower(ScoreRecord.group_name) == func.lower(filter_val),
@@ -269,11 +314,16 @@ def generate_pdf():
 
     if not records: return "No hay registros para este rango.", 404
 
+    # --- CREACIÓN DE LA FIRMA DIGITAL ÚNICA ---
+    raw_data = f"{s_id}::{d_from_str}::{d_to_str}::{filter_val}::{records[0].shooter_name}"
+    encoded_data = base64.b32encode(raw_data.encode()).decode().replace('=', '')
+    sign_hash = hashlib.sha256((raw_data + app.secret_key).encode()).hexdigest()[:8].upper()
+    alpha_signature = f"ALPHA-{sign_hash}-{encoded_data}"
+
     scores = [r.score for r in records]
     avg = sum(scores)/len(scores)
     labels = [f"M{i+1}" for i in range(len(scores))]
 
-    # --- MÉTODO ROBUSTO: GRÁFICA VÍA API (Sin colapsar el servidor) ---
     chart_data = None
     try:
         chart_config = {
@@ -281,22 +331,13 @@ def generate_pdf():
             "data": {
                 "labels": labels,
                 "datasets": [{
-                    "label": "Puntaje",
-                    "data": scores,
-                    "borderColor": "#B91C1C",
-                    "backgroundColor": "rgba(185, 28, 28, 0.15)",
-                    "borderWidth": 3,
-                    "fill": True,
-                    "pointBackgroundColor": "#000000",
-                    "pointRadius": 4
+                    "label": "Puntaje", "data": scores, "borderColor": "#B91C1C",
+                    "backgroundColor": "rgba(185, 28, 28, 0.15)", "borderWidth": 3,
+                    "fill": True, "pointBackgroundColor": "#000000", "pointRadius": 4
                 }]
             },
-            "options": {
-                "plugins": { "legend": { "display": False } },
-                "scales": { "y": { "min": 0, "max": 100 } }
-            }
+            "options": { "plugins": { "legend": { "display": False } }, "scales": { "y": { "min": 0, "max": 100 } } }
         }
-        
         encoded_config = urllib.parse.quote(json.dumps(chart_config))
         chart_url = f"https://quickchart.io/chart?w=700&h=250&bkg=white&c={encoded_config}"
         
@@ -307,25 +348,19 @@ def generate_pdf():
             scores_str = ",".join(map(str, scores))
             g_url = f"https://chart.googleapis.com/chart?cht=lc&chs=700x250&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5&chds=a"
             g_res = requests.get(g_url, timeout=8)
-            if g_res.status_code == 200:
-                chart_data = io.BytesIO(g_res.content)
-    except Exception as e:
-        print(f"Error generando grafica API: {e}")
+            if g_res.status_code == 200: chart_data = io.BytesIO(g_res.content)
+    except Exception as e: print(f"Error generando grafica API: {e}")
 
     partner_user = User.query.filter_by(group_name=filter_val, role='partner').first()
     partner_logo = partner_user.logo_url if partner_user else None
 
-    # --- GENERACIÓN DEL PDF ---
     class TacticPDF(FPDF):
         def header(self):
-            # 1. LOGO PRINCIPAL ALPHA (Izquierda)
             try: 
                 logo_res = requests.get('https://i.ibb.co/j9Pp0YLz/Logo-2.png', timeout=5)
                 if logo_res.status_code == 200:
                     self.image(io.BytesIO(logo_res.content), x=10, y=8, w=40)
             except: pass
-            
-            # 2. LOGO DEL PARTNER / ESCUELA (Derecha)
             if partner_logo:
                 try:
                     p_logo_res = requests.get(partner_logo, timeout=5)
@@ -333,28 +368,33 @@ def generate_pdf():
                         self.image(io.BytesIO(p_logo_res.content), x=165, y=8, w=35)
                 except: pass
             
-            # TÍTULOS CENTRALES / DERECHOS
+            align_txt = 'C' if partner_logo else 'R'
             self.set_font('helvetica', 'B', 22)
             self.set_text_color(0, 0, 0)
-            # Ajustamos la alineación dependiendo de si hay logo o no
-            align_txt = 'C' if partner_logo else 'R'
             self.cell(0, 10, 'EXPEDIENTE', align=align_txt, ln=True)
-            
             self.set_font('helvetica', 'B', 9)
             self.set_text_color(185, 28, 28)
             self.cell(0, 6, 'SISTEMA ALPHA - REPORTE OFICIAL', align=align_txt, ln=True)
             self.ln(5)
-            
             self.set_draw_color(185, 28, 28)
             self.set_line_width(1.2)
             self.line(10, 32, 200, 32)
             self.ln(12)
 
         def footer(self):
-            self.set_y(-15)
-            self.set_font('helvetica', 'I', 8)
+            self.set_y(-22)
+            # Título de Seguridad
+            self.set_font('helvetica', 'I', 6)
             self.set_text_color(128, 128, 128)
-            self.cell(0, 10, f'Generado por Alpha Systems | Pagina {self.page_no()}', align='C')
+            self.cell(0, 4, 'CERTIFICADO DE AUTENTICIDAD CRIPTOGRÁFICA', align='C', ln=True)
+            # Texto y Firma generada en Bold
+            self.set_font('helvetica', 'B', 7)
+            self.set_text_color(0, 0, 0)
+            self.cell(0, 4, f'Este documento está soportado por una firma digital inalterable: {alpha_signature}', align='C', ln=True)
+            # Paginación normal
+            self.set_font('helvetica', 'I', 7)
+            self.set_text_color(128, 128, 128)
+            self.cell(0, 4, f'Generado por Alpha Cloud Systems | Pagina {self.page_no()}', align='C')
 
     pdf = TacticPDF()
     pdf.add_page()
@@ -389,12 +429,10 @@ def generate_pdf():
     pdf.set_draw_color(0, 0, 0)
     pdf.cell(47, 10, f"MAXIMO: {max(scores)}", border=1, align='C')
     pdf.cell(47, 10, f"MINIMO: {min(scores)}", border=1, align='C')
-    
     pdf.set_fill_color(185, 28, 28)
     pdf.set_text_color(255, 255, 255)
     pdf.set_draw_color(185, 28, 28)
     pdf.cell(47, 10, f"PROMEDIO: {avg:.1f}%", border=1, align='C', fill=True)
-    
     pdf.set_fill_color(255, 255, 255)
     pdf.set_text_color(0, 0, 0)
     pdf.set_draw_color(0, 0, 0)
@@ -409,11 +447,9 @@ def generate_pdf():
     
     if chart_data:
         try:
-            # FIX AQUÍ: Se eliminó el parámetro name="grafica.png"
             pdf.image(chart_data, x=15, w=180)
             pdf.ln(2)
-        except Exception as e:
-            print("Error imprimiendo grafica en PDF:", e)
+        except:
             pdf.set_text_color(100, 100, 100)
             pdf.cell(190, 30, "[Error al plasmar la grafica]", border=1, align='C', ln=True)
             pdf.ln(5)
@@ -441,26 +477,25 @@ def generate_pdf():
     pdf.set_draw_color(229, 231, 235)
     
     fill = False
-    for r in records:
+    for i, r in enumerate(records):
+        if i == len(records) - 1 and pdf.get_y() > 210:
+            pdf.add_page()
+            
         pdf.set_fill_color(249, 250, 251) if fill else pdf.set_fill_color(255, 255, 255)
-        
         pdf.cell(45, 8, r.timestamp, border='B', align='C', fill=True)
         pdf.cell(80, 8, r.scenario.upper()[:35], border='B', align='C', fill=True)
         pdf.cell(35, 8, r.sim_id[:15], border='B', align='C', fill=True)
         
         pdf.set_font('helvetica', 'B', 10)
         if r.score >= 90: pdf.set_text_color(185, 28, 28)
+        else: pdf.set_text_color(0, 0, 0)
         pdf.cell(30, 8, str(r.score), border='B', align='C', fill=True, ln=True)
         
         pdf.set_text_color(0, 0, 0)
         pdf.set_font('helvetica', '', 9)
         fill = not fill
 
-    if pdf.get_y() > 240:
-        pdf.add_page()
-    else:
-        pdf.ln(35)
-        
+    pdf.ln(25) 
     y_sig = pdf.get_y()
     pdf.set_draw_color(0, 0, 0)
     pdf.set_line_width(0.5)
