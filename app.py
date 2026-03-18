@@ -129,9 +129,11 @@ def dashboard():
 @app.route('/generate_pdf')
 @login_required
 def generate_pdf():
+    import sys
+    sys.setrecursionlimit(5000) # FIX: Aumenta el límite para que Matplotlib no colapse en Render
     import io
     import matplotlib
-    matplotlib.use('Agg') # Obligatorio para generar gráficas en la nube sin interfaz gráfica
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     
     if session['role'] != 'partner': return "Acceso Denegado", 403
@@ -151,7 +153,6 @@ def generate_pdf():
         limit_from = datetime.strptime(d_from_str, '%Y-%m-%d') if d_from_str else None
         limit_to = datetime.strptime(d_to_str, '%Y-%m-%d') if d_to_str else None
         for r in all_records:
-            # Captura correcta de la fecha si el formato viene con hora AM/PM
             r_date_str = r.timestamp.split(' ')[0]
             r_date = datetime.strptime(r_date_str, '%d/%m/%Y')
             if limit_from and r_date < limit_from: continue
@@ -170,7 +171,6 @@ def generate_pdf():
         plt.figure(figsize=(10, 3.5))
         x_labels = [f"M{i+1}" for i in range(len(scores))]
         
-        # Diseño Triple A: Línea roja, marcadores, relleno inferior
         plt.plot(x_labels, scores, color='#B91C1C', marker='o', linewidth=2.5, markersize=7)
         plt.fill_between(x_labels, scores, color='#B91C1C', alpha=0.1)
         
@@ -178,22 +178,19 @@ def generate_pdf():
         plt.ylabel("Puntaje Logrado", fontsize=10, fontweight='bold', color='#333333')
         plt.grid(True, linestyle='--', alpha=0.4)
         
-        # Elimina bordes feos del gráfico
         for spine in plt.gca().spines.values():
             spine.set_color('#DDDDDD')
             
         plt.tight_layout()
         plt.savefig(chart_data, format='png', dpi=150, transparent=False)
         plt.close()
-        chart_data.seek(0) # Clave para que el PDF pueda leer la imagen
+        chart_data.seek(0)
     except Exception as e:
         print(f"Error Matplotlib: {e}")
         chart_data = None
-    # ---------------------------------------------------
 
     class TacticPDF(FPDF):
         def header(self):
-            # LOGO CON FONDO BLANCO
             try: 
                 import requests
                 logo_res = requests.get('https://i.ibb.co/j9Pp0YLz/Logo-2.png', timeout=5)
@@ -266,7 +263,6 @@ def generate_pdf():
     pdf.cell(49, 10, f"MISIONES: {len(records)}", border=1, align='C', ln=True)
     pdf.ln(12)
 
-    # --- SECCIÓN GRÁFICA ---
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 11)
@@ -275,7 +271,6 @@ def generate_pdf():
     
     if chart_data:
         try:
-            # El atributo name="graficamatplot.png" es vital para FPDF
             pdf.image(chart_data, x=15, w=180, name="graficamatplot.png")
             pdf.ln(2)
         except Exception as e:
