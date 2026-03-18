@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALPHA CLOUD - Tactical Dashboard</title>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #B91C1C; --dark: #000000; --glass: rgba(255, 255, 255, 0.95); }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; }
@@ -52,11 +53,31 @@
         }
         .btn-reg { background: var(--primary); }
         .btn-pdf { background: var(--dark); }
+        .btn-edit { background: #4B5563; }
         .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
 
-        /* --- MAIN CONTENT --- */
+        /* --- MAIN CONTENT & TABS --- */
         .main-content { max-width: 1500px; margin: 30px auto; padding: 0 30px; }
         
+        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #EEE; padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; padding: 10px 20px; font-weight: 800; font-size: 14px; cursor: pointer; color: #666; transition: 0.3s; border-radius: 8px; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn:hover:not(.active) { background: #F3F4F6; }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        
+        /* --- ESTADÍSTICAS Y GRÁFICAS --- */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 15px; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid var(--primary); }
+        .stat-card h3 { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 10px; font-weight: 900;}
+        .stat-card .val { font-size: 32px; font-weight: 900; color: var(--dark); }
+        
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .chart-box { background: white; padding: 20px; border-radius: 15px; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- FILTROS Y TABLA --- */
         .tactical-filters {
             background: #F9FAFB; padding: 25px; border-radius: 15px; margin-bottom: 20px;
             display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;
@@ -65,13 +86,9 @@
         .filter-box label { font-size: 10px; font-weight: 900; color: var(--primary); margin-bottom: 5px; display: block; text-transform: uppercase; }
 
         .sort-btns { display: flex; gap: 8px; margin-bottom: 15px; }
-        .btn-sort { 
-            background: white; border: 1px solid #DDD; padding: 8px 15px; border-radius: 6px; 
-            font-size: 12px; cursor: pointer; font-weight: 800; transition: 0.2s;
-        }
+        .btn-sort { background: white; border: 1px solid #DDD; padding: 8px 15px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 800; transition: 0.2s; }
         .btn-sort:hover { background: #F3F4F6; }
 
-        /* --- TABLE --- */
         .table-wrap { background: white; border-radius: 15px; overflow: hidden; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; }
         th { background: var(--dark); color: white; padding: 18px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
@@ -130,7 +147,7 @@
             {% endif %}
 
             {% if role == 'admin' %}
-            <button class="btn-nav" id="btnOpenEdit" style="background: #4B5563;">
+            <button class="btn-nav btn-edit" id="btnOpenEdit">
                 <i data-lucide="edit"></i> Editar Partner
             </button>
             <button class="btn-nav btn-reg" id="btnOpenReg">
@@ -143,64 +160,79 @@
     </nav>
 
     <div class="main-content">
-        <div class="tactical-filters">
-            <div class="filter-box">
-                <label>Desde Fecha</label>
-                <input type="date" id="dateFrom" class="input-ctrl">
-            </div>
-            <div class="filter-box">
-                <label>Hasta Fecha</label>
-                <input type="date" id="dateTo" class="input-ctrl">
-            </div>
-            <div class="filter-box">
-                <label>ID / Cédula</label>
-                <input type="text" id="searchID" class="input-ctrl" placeholder="Buscar ID...">
-            </div>
-            <div class="filter-box">
-                <label>Estación</label>
-                <input type="text" id="searchStation" class="input-ctrl" placeholder="ID Estación...">
-            </div>
-            <div class="filter-box">
-                <label>Escenario</label>
-                <input type="text" id="searchScenario" class="input-ctrl" placeholder="Escenario...">
-            </div>
-            <div class="filter-box">
-                <button class="btn-action" id="btnClearFilters" style="padding: 12px;">LIMPIAR</button>
+        
+        {% if role in ['partner', 'membresia'] %}
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('dashboard', event)">
+                <i data-lucide="layout-dashboard" style="width:16px; display:inline-block; vertical-align:middle;"></i> DASHBOARD ESTADÍSTICO
+            </button>
+            <button class="tab-btn" onclick="switchTab('table', event)">
+                <i data-lucide="table" style="width:16px; display:inline-block; vertical-align:middle;"></i> REGISTRO DE SESIONES
+            </button>
+        </div>
+
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="stats-grid" id="statsGrid">
+                </div>
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#666; font-weight:800;">CURVA DE RENDIMIENTO (ÚLTIMAS SESIONES)</h3>
+                    <canvas id="lineChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#666; font-weight:800;">TASA DE ESCENARIOS EJECUTADOS</h3>
+                    <canvas id="doughnutChart"></canvas>
+                </div>
             </div>
         </div>
 
-        <div class="sort-btns">
-            <button class="btn-sort" id="sortHigh">Mayor Puntaje ▲</button>
-            <button class="btn-sort" id="sortLow">Menor Puntaje ▼</button>
-        </div>
+        <div id="tab-table" class="tab-content">
+        {% else %}
+        <div id="tab-table" class="tab-content active" style="display: block;">
+        {% endif %}
 
-        <div class="table-wrap">
-            <table id="alphaTable">
-                <thead>
-                    <tr>
-                        <th>Fecha/Hora</th>
-                        <th>Estación</th>
-                        <th>Grupo / Empresa</th>
-                        <th>Identificación</th>
-                        <th>Tirador</th>
-                        <th>Escenario</th>
-                        <th>Puntaje</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    {% for r in records %}
-                    <tr class="data-row" data-score="{{ r.score }}">
-                        <td style="font-size: 12px;">{{ r.timestamp }}</td>
-                        <td>{{ r.sim_id }}</td>
-                        <td><span class="badge-group">{{ r.group_name }}</span></td>
-                        <td>{{ r.shooter_id }}</td>
-                        <td>{{ r.shooter_name | upper }}</td>
-                        <td>{{ r.scenario }}</td>
-                        <td><span class="badge-score">{{ r.score }}</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="tactical-filters">
+                <div class="filter-box"><label>Desde Fecha</label><input type="date" id="dateFrom" class="input-ctrl"></div>
+                <div class="filter-box"><label>Hasta Fecha</label><input type="date" id="dateTo" class="input-ctrl"></div>
+                <div class="filter-box"><label>ID / Cédula</label><input type="text" id="searchID" class="input-ctrl" placeholder="Buscar ID..."></div>
+                <div class="filter-box"><label>Estación</label><input type="text" id="searchStation" class="input-ctrl" placeholder="ID Estación..."></div>
+                <div class="filter-box"><label>Escenario</label><input type="text" id="searchScenario" class="input-ctrl" placeholder="Escenario..."></div>
+                <div class="filter-box"><button class="btn-action" id="btnClearFilters" style="padding: 12px;">LIMPIAR</button></div>
+            </div>
+
+            <div class="sort-btns">
+                <button class="btn-sort" id="sortHigh">Mayor Puntaje ▲</button>
+                <button class="btn-sort" id="sortLow">Menor Puntaje ▼</button>
+            </div>
+
+            <div class="table-wrap">
+                <table id="alphaTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Estación</th>
+                            <th>Grupo / Empresa</th>
+                            <th>Identificación</th>
+                            <th>Tirador</th>
+                            <th>Escenario</th>
+                            <th>Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        {% for r in records %}
+                        <tr class="data-row" data-score="{{ r.score }}">
+                            <td style="font-size: 12px;">{{ r.timestamp }}</td>
+                            <td>{{ r.sim_id }}</td>
+                            <td><span class="badge-group">{{ r.group_name }}</span></td>
+                            <td>{{ r.shooter_id }}</td>
+                            <td>{{ r.shooter_name | upper }}</td>
+                            <td>{{ r.scenario }}</td>
+                            <td><span class="badge-score">{{ r.score }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -256,7 +288,7 @@
                 <label>Nuevo Logo (Reemplazar)</label>
                 <input type="file" id="eLogo" class="input-ctrl" accept="image/*" style="padding: 10px;">
             </div>
-            <button class="btn-action" id="btnUpdatePartner" style="background: #4B5563;">Actualizar Datos</button>
+            <button class="btn-action" id="btnUpdatePartner">Actualizar Datos</button>
         </div>
     </div>
     {% endif %}
@@ -276,17 +308,96 @@
             </div>
             <div class="input-group"><label>Desde Fecha</label><input type="date" id="pdfFrom" class="input-ctrl"></div>
             <div class="input-group"><label>Hasta Fecha</label><input type="date" id="pdfTo" class="input-ctrl"></div>
-            <button class="btn-action" id="btnDownloadPdf" style="background: var(--primary);">GENERAR DOCUMENTO</button>
+            <button class="btn-action" id="btnDownloadPdf">GENERAR DOCUMENTO</button>
         </div>
     </div>
 
     {% endif %}
 
     <script>
+        // --- FUNCIÓN GLOBAL PARA CAMBIAR PESTAÑAS ---
+        function switchTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if (event) event.currentTarget.classList.add('active');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
-            // Referencias a Elementos
+            // --- LÓGICA DE GRÁFICAS Y DASHBOARD ---
+            const rawData = `{{ chart_data | safe }}`;
+            if (rawData && rawData !== 'undefined' && rawData !== '' && document.getElementById('lineChart')) {
+                try {
+                    const records = JSON.parse(rawData);
+                    const role = "{{ role }}";
+                    
+                    if (records.length > 0) {
+                        const chronological = [...records].reverse();
+                        const scores = chronological.map(r => r.score);
+                        const labels = chronological.map(r => r.timestamp.split(' ')[0]);
+
+                        let avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+                        let max = Math.max(...scores);
+                        let htmlStats = '';
+
+                        if (role === 'partner') {
+                            const uniqueShooters = new Set(records.map(r => r.shooter_name)).size;
+                            htmlStats = `
+                                <div class="stat-card"><h3>Sesiones Ejecutadas</h3><div class="val">${records.length}</div></div>
+                                <div class="stat-card"><h3>Operadores Activos</h3><div class="val">${uniqueShooters}</div></div>
+                                <div class="stat-card"><h3>Promedio Global</h3><div class="val" style="color:var(--primary);">${avg}%</div></div>
+                                <div class="stat-card"><h3>Puntaje Histórico Max</h3><div class="val">${max}</div></div>
+                            `;
+                        } else if (role === 'membresia') {
+                            htmlStats = `
+                                <div class="stat-card"><h3>Misiones Completadas</h3><div class="val">${records.length}</div></div>
+                                <div class="stat-card"><h3>Promedio Táctico</h3><div class="val" style="color:var(--primary);">${avg}%</div></div>
+                                <div class="stat-card"><h3>Puntaje Histórico Max</h3><div class="val">${max}</div></div>
+                            `;
+                        }
+                        document.getElementById('statsGrid').innerHTML = htmlStats;
+
+                        // Chart: Línea
+                        new Chart(document.getElementById('lineChart'), {
+                            type: 'line',
+                            data: {
+                                labels: labels.slice(-20),
+                                datasets: [{
+                                    label: 'Puntaje',
+                                    data: scores.slice(-20),
+                                    borderColor: '#B91C1C',
+                                    backgroundColor: 'rgba(185, 28, 28, 0.1)',
+                                    borderWidth: 3, fill: true, pointBackgroundColor: '#000000', tension: 0.3
+                                }]
+                            },
+                            options: { plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
+                        });
+
+                        // Chart: Doughnut
+                        const scenarioCounts = {};
+                        records.forEach(r => { scenarioCounts[r.scenario] = (scenarioCounts[r.scenario] || 0) + 1; });
+                        new Chart(document.getElementById('doughnutChart'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(scenarioCounts).map(s => s.substring(0, 20) + '...'),
+                                datasets: [{
+                                    data: Object.values(scenarioCounts),
+                                    backgroundColor: ['#B91C1C', '#000000', '#4B5563', '#9CA3AF', '#E5E7EB']
+                                }]
+                            },
+                            options: { plugins: { legend: { position: 'bottom' } }, cutout: '70%' }
+                        });
+                    } else {
+                        document.getElementById('statsGrid').innerHTML = "<p style='color:#666; font-size:12px; text-align:center; width:100%;'>No hay datos para generar telemetría. Complete una sesión.</p>";
+                    }
+                } catch (e) {
+                    console.error("Error al procesar los datos de las gráficas:", e);
+                }
+            }
+
+            // --- REFERENCIAS A MODALES ---
             const regModal = document.getElementById('regModal');
             const pdfModal = document.getElementById('pdfModal');
             const editModal = document.getElementById('editModal');
@@ -299,7 +410,6 @@
             const btnClosePdf = document.getElementById('closePdfModal');
             const btnCloseEdit = document.getElementById('closeEditModal');
             
-            // Gestión de Modales
             if(btnOpenReg) btnOpenReg.addEventListener('click', () => regModal.style.display = 'flex');
             if(btnOpenPdf) btnOpenPdf.addEventListener('click', () => pdfModal.style.display = 'flex');
             if(btnOpenEdit) btnOpenEdit.addEventListener('click', () => editModal.style.display = 'flex');
@@ -308,7 +418,7 @@
             if(btnClosePdf) btnClosePdf.addEventListener('click', () => pdfModal.style.display = 'none');
             if(btnCloseEdit) btnCloseEdit.addEventListener('click', () => editModal.style.display = 'none');
 
-            // Cambio Dinámico de Formulario Registro
+            // --- CAMBIO DINÁMICO FORMULARIO REGISTRO ---
             const rRole = document.getElementById('rRole');
             if(rRole) {
                 rRole.addEventListener('change', (e) => {
@@ -318,7 +428,7 @@
                 });
             }
 
-            // Guardar Usuario (AJAX)
+            // --- GUARDAR USUARIO NUEVO ---
             const btnSaveUser = document.getElementById('btnSaveUser');
             if(btnSaveUser) {
                 btnSaveUser.addEventListener('click', async () => {
@@ -328,24 +438,19 @@
 
                     let uploadedLogoUrl = "";
                     const roleVal = document.getElementById('rRole').value;
-                    const logoFile = document.getElementById('rLogo').files[0];
+                    const logoFile = document.getElementById('rLogo') ? document.getElementById('rLogo').files[0] : null;
 
-                    // Si es partner y seleccionó un archivo, lo subimos a ImgBB
                     if (roleVal === 'partner' && logoFile) {
                         const formData = new FormData();
                         formData.append('image', logoFile);
                         try {
                             const imgbbRes = await fetch('https://api.imgbb.com/1/upload?key=df01bb05ce03159d54c33e1e22eba2cf', {
-                                method: 'POST',
-                                body: formData
+                                method: 'POST', body: formData
                             });
                             const imgbbData = await imgbbRes.json();
-                            if (imgbbData.success) {
-                                uploadedLogoUrl = imgbbData.data.url;
-                            }
+                            if (imgbbData.success) { uploadedLogoUrl = imgbbData.data.url; }
                         } catch (error) {
                             console.error("Error subiendo el logo:", error);
-                            alert("No se pudo subir el logo, el registro continuará sin imagen.");
                         }
                     }
 
@@ -353,9 +458,9 @@
                         username: document.getElementById('rUser').value,
                         password: document.getElementById('rPass').value,
                         role: roleVal,
-                        group_name: document.getElementById('rGrp').value,
-                        shooter_id: document.getElementById('rIdDoc').value,
-                        location: document.getElementById('rLoc').value || document.getElementById('rSuc').value,
+                        group_name: document.getElementById('rGrp') ? document.getElementById('rGrp').value : "",
+                        shooter_id: document.getElementById('rIdDoc') ? document.getElementById('rIdDoc').value : "",
+                        location: (document.getElementById('rLoc') ? document.getElementById('rLoc').value : "") || (document.getElementById('rSuc') ? document.getElementById('rSuc').value : ""),
                         logo_url: uploadedLogoUrl
                     };
 
@@ -366,10 +471,10 @@
                     });
 
                     if(resp.ok) { 
-                        alert("Usuario y configuración guardados correctamente."); 
+                        alert("Usuario guardado correctamente."); 
                         location.reload(); 
                     } else { 
-                        alert("Error al crear usuario."); 
+                        alert("Error al crear usuario. Verifica que no exista ya."); 
                         btnSaveUser.textContent = "Finalizar Registro"; 
                         btnSaveUser.style.opacity = "1";
                         btnSaveUser.disabled = false;
@@ -377,7 +482,7 @@
                 });
             }
 
-            // Editar Partner (AJAX)
+            // --- EDITAR PARTNER ---
             const btnUpdatePartner = document.getElementById('btnUpdatePartner');
             if(btnUpdatePartner) {
                 btnUpdatePartner.addEventListener('click', async () => {
@@ -420,7 +525,7 @@
                     });
 
                     if(resp.ok) { 
-                        alert("Datos de la escuela actualizados con éxito."); 
+                        alert("Datos actualizados con éxito."); 
                         location.reload(); 
                     } else { 
                         alert("Error al actualizar datos."); 
@@ -431,7 +536,7 @@
                 });
             }
 
-            // Descargar PDF
+            // --- DESCARGAR PDF ---
             const btnDownloadPdf = document.getElementById('btnDownloadPdf');
             if(btnDownloadPdf) {
                 btnDownloadPdf.addEventListener('click', () => {
@@ -443,7 +548,7 @@
                 });
             }
 
-            // MOTOR DE FILTROS
+            // --- MOTOR DE FILTROS PARA TABLA ---
             const filterIds = ['dateFrom', 'dateTo', 'searchID', 'searchStation', 'searchScenario'];
             filterIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -460,7 +565,7 @@
                 document.querySelectorAll('.data-row').forEach(row => {
                     const rawDate = row.cells[0].textContent.trim().split(' ')[0]; 
                     const parts = rawDate.split('/');
-                    const tableDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    const tableDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // Convertir a YYYY-MM-DD
 
                     const matchDate = (!dFrom || tableDate >= dFrom) && (!dTo || tableDate <= dTo);
                     const matchID = row.cells[3].textContent.trim().toLowerCase().includes(sID);
@@ -471,7 +576,6 @@
                 });
             }
 
-            // Botón Limpiar Filtros
             const btnClear = document.getElementById('btnClearFilters');
             if(btnClear) {
                 btnClear.addEventListener('click', () => {
@@ -480,7 +584,7 @@
                 });
             }
 
-            // ORDENAMIENTO DE TABLA
+            // --- ORDENAMIENTO DE TABLA ---
             function sortTable(asc) {
                 const body = document.getElementById('tableBody');
                 const rows = Array.from(body.querySelectorAll('.data-row'));

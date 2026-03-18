@@ -112,6 +112,7 @@ def register_user():
 @app.route('/')
 @login_required
 def dashboard():
+    import json
     role = session['role']
     query = ScoreRecord.query
     unique_shooters = []
@@ -126,11 +127,21 @@ def dashboard():
         records = query.filter_by(shooter_id=session['filter_val']).order_by(ScoreRecord.id.desc()).all()
     else:
         records = query.order_by(ScoreRecord.id.desc()).all()
-        # Cargamos los partners para que el admin pueda editarlos
         partners = User.query.filter_by(role='partner').all() 
         
+    # --- PREPARAR DATOS PARA LAS GRÁFICAS WEB ---
+    chart_data = []
+    for r in records:
+        chart_data.append({
+            'score': r.score,
+            'scenario': r.scenario,
+            'timestamp': r.timestamp,
+            'shooter_name': r.shooter_name
+        })
+        
     return render_template('dashboard.html', records=records, role=role, 
-                           username=session['username'], shooters=unique_shooters, partners=partners)
+                           username=session['username'], shooters=unique_shooters, 
+                           partners=partners, chart_data=json.dumps(chart_data))
 
 @app.route('/edit_partner', methods=['POST'])
 @login_required
