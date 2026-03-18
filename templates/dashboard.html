@@ -15,19 +15,27 @@
         
         body { background-color: #F9FAFB; color: var(--dark); min-height: 100vh; overflow-x: hidden; }
 
-        /* --- VISTA LOGIN --- */
-        .login-overlay { 
-            height: 100vh; display: flex; align-items: center; justify-content: center;
+        /* --- VISTA LOGIN Y PUBLICIDAD --- */
+        .login-container { 
+            min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 40px;
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
                         url('https://i.ibb.co/MkwvwMgp/Fondo.png') no-repeat center center fixed; 
-            background-size: cover; padding: 15px;
+            background-size: cover; padding: 20px;
         }
+        
         .login-card { 
             background: var(--glass); padding: 40px 30px; border-radius: 20px; width: 100%; max-width: 420px; 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border-top: 6px solid var(--primary);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border-top: 6px solid var(--primary); z-index: 10;
         }
         .login-card img { width: 120px; margin-bottom: 20px; }
         .login-card h2 { font-weight: 900; letter-spacing: -1px; margin-bottom: 30px; text-transform: uppercase; }
+
+        .login-ad {
+            width: 160px; height: 600px; border-radius: 12px; overflow: hidden; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-ad img { width: 100%; height: 100%; object-fit: cover; }
 
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; font-size: 11px; font-weight: 800; color: #555; margin-bottom: 5px; text-transform: uppercase; }
@@ -59,13 +67,8 @@
         .btn-edit { background: #4B5563; }
         .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
 
-        /* --- LAYOUT CON PUBLICIDAD (BLINDADO) --- */
-        .layout-wrapper { display: flex; justify-content: center; gap: 20px; padding: 0 15px; max-width: 1900px; margin: 0 auto; }
-        .ad-sidebar { width: 160px; min-width: 160px; height: 600px; position: sticky; top: 20px; border-radius: 12px; background: #E5E7EB; border: 2px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
-        .ad-sidebar img { width: 100%; height: 100%; object-fit: cover; border: none; background: white; }
-        .ad-placeholder { color: #6B7280; font-size: 11px; font-weight: 900; text-align: center; padding: 15px; text-transform: uppercase; letter-spacing: 1px; }
-
-        .main-content { flex: 1; max-width: 1400px; margin: 30px 0; padding: 0; min-width: 0; }
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content { max-width: 1500px; margin: 30px auto; padding: 0 20px; }
         
         /* --- TABS --- */
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 2px solid #E5E7EB; padding-bottom: 10px; overflow-x: auto; white-space: nowrap; }
@@ -124,8 +127,8 @@
         .fc-timegrid-now-indicator-arrow { border-color: var(--primary) !important; border-width: 6px !important; }
 
         /* --- MEDIA QUERIES --- */
-        @media (max-width: 900px) { 
-            .ad-sidebar { display: none !important; } 
+        @media (max-width: 1050px) { 
+            .login-ad { display: none !important; } 
         }
         @media (max-width: 768px) {
             .navbar { flex-direction: column; text-align: center; }
@@ -147,7 +150,14 @@
     {% set banner_modal = ads.get('modal', '') if ads else '' %}
 
     {% if login_view %}
-    <div class="login-overlay">
+    <div class="login-container">
+        
+        {% if banner_left %}
+        <div class="login-ad">
+            <img src="{{ banner_left }}" onerror="this.style.display='none';">
+        </div>
+        {% endif %}
+
         <div class="login-card">
             <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Alpha Logo">
             <h2>ACCESO ALPHA CLOUD</h2>
@@ -171,7 +181,15 @@
                 <button type="submit" class="btn-action">Iniciar Sesión</button>
             </form>
         </div>
+
+        {% if banner_right %}
+        <div class="login-ad">
+            <img src="{{ banner_right }}" onerror="this.style.display='none';">
+        </div>
+        {% endif %}
+
     </div>
+    
     {% else %}
 
     <nav class="navbar">
@@ -201,186 +219,164 @@
         </div>
     </nav>
 
-    <div class="layout-wrapper">
+    <div class="main-content">
         
-        <aside class="ad-sidebar">
-            {% if banner_left %}
-                <img src="{{ banner_left }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="ad-placeholder" style="display:none;">PUBLICIDAD<br>IZQUIERDA<br>160x600<br><br><span style="color:#ef4444; font-size:10px;">Enlace Roto</span></div>
-            {% else %}
-                <div class="ad-placeholder">PUBLICIDAD<br>IZQUIERDA<br>160x600</div>
-            {% endif %}
-        </aside>
-
-        <div class="main-content">
-            
-            <div class="tabs-nav">
-                {% if role in ['partner', 'membresia'] %}
-                <button class="tab-btn active" onclick="switchTab('dashboard', event)">
-                    <i data-lucide="layout-dashboard" style="width:16px; display:inline-block; vertical-align:middle;"></i> DASHBOARD ESTADÍSTICO
-                </button>
-                {% endif %}
-                
-                <button class="tab-btn {% if role == 'admin' %}active{% endif %}" onclick="switchTab('table', event)">
-                    <i data-lucide="table" style="width:16px; display:inline-block; vertical-align:middle;"></i> REGISTRO DE SESIONES
-                </button>
-
-                <button class="tab-btn" onclick="switchTab('calendar', event)">
-                    <i data-lucide="calendar" style="width:16px; display:inline-block; vertical-align:middle;"></i> CALENDARIO
-                </button>
-
-                {% if role == 'admin' %}
-                <button class="tab-btn" onclick="switchTab('verify', event)">
-                    <i data-lucide="shield-check" style="width:16px; display:inline-block; vertical-align:middle;"></i> VERIFICAR FIRMA
-                </button>
-                <button class="tab-btn" onclick="switchTab('ads', event)">
-                    <i data-lucide="image" style="width:16px; display:inline-block; vertical-align:middle;"></i> PUBLICIDAD
-                </button>
-                {% endif %}
-            </div>
-
+        <div class="tabs-nav">
             {% if role in ['partner', 'membresia'] %}
-            <div id="tab-dashboard" class="tab-content active">
-                <div class="stats-grid" id="statsGrid">
-                    </div>
-                <div class="charts-grid">
-                    <div class="chart-box">
-                        <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">CURVA DE RENDIMIENTO (ÚLTIMAS SESIONES)</h3>
-                        <canvas id="lineChart"></canvas>
-                    </div>
-                    <div class="chart-box">
-                        <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">TASA DE ESCENARIOS EJECUTADOS</h3>
-                        <canvas id="doughnutChart"></canvas>
-                    </div>
-                </div>
-            </div>
+            <button class="tab-btn active" onclick="switchTab('dashboard', event)">
+                <i data-lucide="layout-dashboard" style="width:16px; display:inline-block; vertical-align:middle;"></i> DASHBOARD ESTADÍSTICO
+            </button>
             {% endif %}
+            
+            <button class="tab-btn {% if role == 'admin' %}active{% endif %}" onclick="switchTab('table', event)">
+                <i data-lucide="table" style="width:16px; display:inline-block; vertical-align:middle;"></i> REGISTRO DE SESIONES
+            </button>
 
-            <div id="tab-table" class="tab-content {% if role == 'admin' %}active{% endif %}">
-                <div class="tactical-filters">
-                    <div class="filter-box"><label>Desde Fecha</label><input type="date" id="dateFrom" class="input-ctrl"></div>
-                    <div class="filter-box"><label>Hasta Fecha</label><input type="date" id="dateTo" class="input-ctrl"></div>
-                    <div class="filter-box"><label>ID / Cédula</label><input type="text" id="searchID" class="input-ctrl" placeholder="Buscar ID..."></div>
-                    <div class="filter-box"><label>Estación</label><input type="text" id="searchStation" class="input-ctrl" placeholder="ID Estación..."></div>
-                    <div class="filter-box"><label>Escenario</label><input type="text" id="searchScenario" class="input-ctrl" placeholder="Escenario..."></div>
-                    <div class="filter-box"><button class="btn-action" id="btnClearFilters" style="padding: 12px;">LIMPIAR</button></div>
-                </div>
-
-                <div class="sort-btns">
-                    <button class="btn-sort" id="sortHigh">Mayor Puntaje ▲</button>
-                    <button class="btn-sort" id="sortLow">Menor Puntaje ▼</button>
-                </div>
-
-                <div class="table-wrap">
-                    <table id="alphaTable">
-                        <thead>
-                            <tr>
-                                <th>Fecha/Hora</th>
-                                <th>Estación</th>
-                                <th>Grupo / Empresa</th>
-                                <th>Identificación</th>
-                                <th>Tirador</th>
-                                <th>Escenario</th>
-                                <th>Puntaje</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            {% for r in records %}
-                            <tr class="data-row" data-score="{{ r.score }}">
-                                <td style="font-size: 12px;">{{ r.timestamp }}</td>
-                                <td>{{ r.sim_id }}</td>
-                                <td><span class="badge-group">{{ r.group_name }}</span></td>
-                                <td>{{ r.shooter_id }}</td>
-                                <td>{{ r.shooter_name | upper }}</td>
-                                <td>{{ r.scenario }}</td>
-                                <td><span class="badge-score">{{ r.score }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="tab-calendar" class="tab-content">
-                <div class="tactical-filters" style="margin-bottom: 20px;">
-                    <div class="filter-box">
-                        <label>Filtrar Agendamientos</label>
-                        <input type="text" id="searchCalendar" class="input-ctrl" placeholder="Buscar escuela o palabra clave...">
-                    </div>
-                    {% if role == 'admin' %}
-                    <div class="filter-box">
-                        <button class="btn-action" id="btnNewEvent" style="padding: 12px; background: var(--primary);">NUEVA CITA</button>
-                    </div>
-                    {% endif %}
-                </div>
-                <div id="calendar"></div>
-            </div>
+            <button class="tab-btn" onclick="switchTab('calendar', event)">
+                <i data-lucide="calendar" style="width:16px; display:inline-block; vertical-align:middle;"></i> CALENDARIO
+            </button>
 
             {% if role == 'admin' %}
-            <div id="tab-verify" class="tab-content">
-                <div class="tactical-filters" style="max-width: 600px; margin: 40px auto; display: block; text-align: center;">
-                    <i data-lucide="shield-check" style="width: 50px; height: 50px; color: var(--primary); margin-bottom: 15px;"></i>
-                    <h2 style="font-weight: 900; margin-bottom: 10px;">CENTRO DE VERIFICACIÓN CRIPTOGRÁFICA</h2>
-                    <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px;">Ingrese el código de firma digital que se encuentra en el pie de página del documento PDF para comprobar su autenticidad y origen.</p>
-                    
-                    <div class="input-group">
-                        <input type="text" id="vSignature" class="input-ctrl" placeholder="Ej: ALPHA-A1B2C3D4-XXXXX..." style="text-align: center; font-weight: bold; letter-spacing: 1px;">
-                    </div>
-                    <button class="btn-action" id="btnVerifySig">Verificar Autenticidad</button>
-                    
-                    <div id="verifyResult" style="display: none; margin-top: 25px; padding: 20px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; text-align: left;">
-                        <h3 style="color: #059669; font-weight: 900; margin-bottom: 15px; text-align: center;"><i data-lucide="check-circle" style="width:18px; vertical-align:middle;"></i> FIRMA DIGITAL VÁLIDA</h3>
-                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Tirador:</strong> <span id="vrShooter"></span></p>
-                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Identificación:</strong> <span id="vrId"></span></p>
-                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Generado por (Partner):</strong> <span id="vrPartner" class="badge-group"></span></p>
-                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Filtro Desde:</strong> <span id="vrFrom"></span></p>
-                        <p style="font-size: 13px; margin-bottom: 20px;"><strong>Filtro Hasta:</strong> <span id="vrTo"></span></p>
-                        
-                        <button class="btn-action" id="btnDownloadVerified" style="background: var(--primary); padding: 12px; font-size: 12px; display: flex; justify-content: center; gap: 8px;"><i data-lucide="download" style="width:16px;"></i> DESCARGAR PDF ORIGINAL</button>
-                    </div>
-                    
-                    <div id="verifyError" style="display: none; margin-top: 20px; padding: 15px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 12px; color: #B91C1C; font-weight: bold; font-size: 13px;">
-                        <i data-lucide="alert-triangle" style="width:18px; vertical-align:middle;"></i> <span id="verifyErrorMsg">FIRMA INVÁLIDA O CORRUPTA.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-ads" class="tab-content">
-                <div class="tactical-filters" style="max-width: 800px; margin: 40px auto; display: block;">
-                    <h2 style="font-weight: 900; margin-bottom: 10px; text-align: center;">GESTIÓN DE PUBLICIDAD</h2>
-                    <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px; text-align: center;">Añade enlaces directos a imágenes para actualizar los banners laterales y la ventana de bienvenida. <strong style="color: var(--primary);">Deben terminar en .png o .jpg</strong></p>
-                    
-                    <div style="margin-top:20px; display: grid; gap: 20px;">
-                        <div class="input-group">
-                            <label>Banner Izquierdo (Recomendado 160x600 URL Directa)</label>
-                            <input type="text" id="url-left" class="input-ctrl" value="{{ banner_left }}">
-                            <button onclick="saveAd('banner_left', 'url-left')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Izquierdo</button>
-                        </div>
-                        <div class="input-group">
-                            <label>Banner Derecho (Recomendado 160x600 URL Directa)</label>
-                            <input type="text" id="url-right" class="input-ctrl" value="{{ banner_right }}">
-                            <button onclick="saveAd('banner_right', 'url-right')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Derecho</button>
-                        </div>
-                        <div class="input-group">
-                            <label>Modal Popup de Bienvenida (URL Directa)</label>
-                            <input type="text" id="url-modal" class="input-ctrl" value="{{ banner_modal }}">
-                            <button onclick="saveAd('modal', 'url-modal')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Modal Popup</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <button class="tab-btn" onclick="switchTab('verify', event)">
+                <i data-lucide="shield-check" style="width:16px; display:inline-block; vertical-align:middle;"></i> VERIFICAR FIRMA
+            </button>
+            <button class="tab-btn" onclick="switchTab('ads', event)">
+                <i data-lucide="image" style="width:16px; display:inline-block; vertical-align:middle;"></i> PUBLICIDAD
+            </button>
             {% endif %}
-
         </div>
 
-        <aside class="ad-sidebar">
-            {% if banner_right %}
-                <img src="{{ banner_right }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="ad-placeholder" style="display:none;">PUBLICIDAD<br>DERECHA<br>160x600<br><br><span style="color:#ef4444; font-size:10px;">Enlace Roto</span></div>
-            {% else %}
-                <div class="ad-placeholder">PUBLICIDAD<br>DERECHA<br>160x600</div>
-            {% endif %}
-        </aside>
+        {% if role in ['partner', 'membresia'] %}
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="stats-grid" id="statsGrid">
+                </div>
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">CURVA DE RENDIMIENTO (ÚLTIMAS SESIONES)</h3>
+                    <canvas id="lineChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">TASA DE ESCENARIOS EJECUTADOS</h3>
+                    <canvas id="doughnutChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="tab-table" class="tab-content {% if role == 'admin' %}active{% endif %}">
+            <div class="tactical-filters">
+                <div class="filter-box"><label>Desde Fecha</label><input type="date" id="dateFrom" class="input-ctrl"></div>
+                <div class="filter-box"><label>Hasta Fecha</label><input type="date" id="dateTo" class="input-ctrl"></div>
+                <div class="filter-box"><label>ID / Cédula</label><input type="text" id="searchID" class="input-ctrl" placeholder="Buscar ID..."></div>
+                <div class="filter-box"><label>Estación</label><input type="text" id="searchStation" class="input-ctrl" placeholder="ID Estación..."></div>
+                <div class="filter-box"><label>Escenario</label><input type="text" id="searchScenario" class="input-ctrl" placeholder="Escenario..."></div>
+                <div class="filter-box"><button class="btn-action" id="btnClearFilters" style="padding: 12px;">LIMPIAR</button></div>
+            </div>
+
+            <div class="sort-btns">
+                <button class="btn-sort" id="sortHigh">Mayor Puntaje ▲</button>
+                <button class="btn-sort" id="sortLow">Menor Puntaje ▼</button>
+            </div>
+
+            <div class="table-wrap">
+                <table id="alphaTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Estación</th>
+                            <th>Grupo / Empresa</th>
+                            <th>Identificación</th>
+                            <th>Tirador</th>
+                            <th>Escenario</th>
+                            <th>Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        {% for r in records %}
+                        <tr class="data-row" data-score="{{ r.score }}">
+                            <td style="font-size: 12px;">{{ r.timestamp }}</td>
+                            <td>{{ r.sim_id }}</td>
+                            <td><span class="badge-group">{{ r.group_name }}</span></td>
+                            <td>{{ r.shooter_id }}</td>
+                            <td>{{ r.shooter_name | upper }}</td>
+                            <td>{{ r.scenario }}</td>
+                            <td><span class="badge-score">{{ r.score }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-calendar" class="tab-content">
+            <div class="tactical-filters" style="margin-bottom: 20px;">
+                <div class="filter-box">
+                    <label>Filtrar Agendamientos</label>
+                    <input type="text" id="searchCalendar" class="input-ctrl" placeholder="Buscar escuela o palabra clave...">
+                </div>
+                {% if role == 'admin' %}
+                <div class="filter-box">
+                    <button class="btn-action" id="btnNewEvent" style="padding: 12px; background: var(--primary);">NUEVA CITA</button>
+                </div>
+                {% endif %}
+            </div>
+            <div id="calendar"></div>
+        </div>
+
+        {% if role == 'admin' %}
+        <div id="tab-verify" class="tab-content">
+            <div class="tactical-filters" style="max-width: 600px; margin: 40px auto; display: block; text-align: center;">
+                <i data-lucide="shield-check" style="width: 50px; height: 50px; color: var(--primary); margin-bottom: 15px;"></i>
+                <h2 style="font-weight: 900; margin-bottom: 10px;">CENTRO DE VERIFICACIÓN CRIPTOGRÁFICA</h2>
+                <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px;">Ingrese el código de firma digital que se encuentra en el pie de página del documento PDF para comprobar su autenticidad y origen.</p>
+                
+                <div class="input-group">
+                    <input type="text" id="vSignature" class="input-ctrl" placeholder="Ej: ALPHA-A1B2C3D4-XXXXX..." style="text-align: center; font-weight: bold; letter-spacing: 1px;">
+                </div>
+                <button class="btn-action" id="btnVerifySig">Verificar Autenticidad</button>
+                
+                <div id="verifyResult" style="display: none; margin-top: 25px; padding: 20px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; text-align: left;">
+                    <h3 style="color: #059669; font-weight: 900; margin-bottom: 15px; text-align: center;"><i data-lucide="check-circle" style="width:18px; vertical-align:middle;"></i> FIRMA DIGITAL VÁLIDA</h3>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Tirador:</strong> <span id="vrShooter"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Identificación:</strong> <span id="vrId"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Generado por (Partner):</strong> <span id="vrPartner" class="badge-group"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Filtro Desde:</strong> <span id="vrFrom"></span></p>
+                    <p style="font-size: 13px; margin-bottom: 20px;"><strong>Filtro Hasta:</strong> <span id="vrTo"></span></p>
+                    
+                    <button class="btn-action" id="btnDownloadVerified" style="background: var(--primary); padding: 12px; font-size: 12px; display: flex; justify-content: center; gap: 8px;"><i data-lucide="download" style="width:16px;"></i> DESCARGAR PDF ORIGINAL</button>
+                </div>
+                
+                <div id="verifyError" style="display: none; margin-top: 20px; padding: 15px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 12px; color: #B91C1C; font-weight: bold; font-size: 13px;">
+                    <i data-lucide="alert-triangle" style="width:18px; vertical-align:middle;"></i> <span id="verifyErrorMsg">FIRMA INVÁLIDA O CORRUPTA.</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-ads" class="tab-content">
+            <div class="tactical-filters" style="max-width: 800px; margin: 40px auto; display: block;">
+                <h2 style="font-weight: 900; margin-bottom: 10px; text-align: center;">GESTIÓN DE PUBLICIDAD</h2>
+                <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px; text-align: center;">Añade enlaces directos a imágenes para actualizar los banners laterales del login y la ventana de bienvenida.</p>
+                
+                <div style="margin-top:20px; display: grid; gap: 20px;">
+                    <div class="input-group">
+                        <label>Banner Login Izquierdo (160x600 URL)</label>
+                        <input type="text" id="url-left" class="input-ctrl" value="{{ banner_left }}">
+                        <button onclick="saveAd('banner_left', 'url-left')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Izquierdo</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Banner Login Derecho (160x600 URL)</label>
+                        <input type="text" id="url-right" class="input-ctrl" value="{{ banner_right }}">
+                        <button onclick="saveAd('banner_right', 'url-right')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Derecho</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Modal Popup Dashboard (URL)</label>
+                        <input type="text" id="url-modal" class="input-ctrl" value="{{ banner_modal }}">
+                        <button onclick="saveAd('modal', 'url-modal')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Modal Popup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 
