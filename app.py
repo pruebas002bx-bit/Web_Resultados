@@ -7,13 +7,18 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# app.py
+# ¡ATENCIÓN! NO pongas la URL de Aiven aquí.
+# Render leerá la base de datos desde sus variables de entorno.
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///local_fallback.db')
 
+# Corrección para compatibilidad en Render: usar driver pg8000 puro Python
 if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+    db_url = db_url.replace("postgres://", "postgresql+pg8000://", 1)
+elif db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
@@ -53,7 +58,7 @@ def upload_score():
 def dashboard():
     # Obtener los últimos 100 registros, ordenados del más reciente al más antiguo
     records = ScoreRecord.query.order_by(ScoreRecord.id.desc()).limit(100).all()
-    # Pasa la variable 'records' al archivo dashboard.html
+    # Pasa la variable 'records' al archivo dashboard.html dentro de la carpeta 'templates'
     return render_template('dashboard.html', records=records)
 
 if __name__ == '__main__':
