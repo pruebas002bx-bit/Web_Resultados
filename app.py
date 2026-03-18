@@ -260,11 +260,11 @@ def generate_pdf():
             self.set_text_color(0, 0, 0)
             # Ajustamos la alineación dependiendo de si hay logo o no
             align_txt = 'C' if partner_logo else 'R'
-            self.cell(0, 10, 'EXPEDIENTE TACTICO DE RENDIMIENTO', align=align_txt, ln=True)
+            self.cell(0, 10, 'EXPEDIENTE', align=align_txt, ln=True)
             
             self.set_font('helvetica', 'B', 9)
             self.set_text_color(185, 28, 28)
-            self.cell(0, 6, 'SISTEMA ALPHA CLOUD - REPORTE OFICIAL CONFIDENCIAL', align=align_txt, ln=True)
+            self.cell(0, 6, 'SISTEMA ALPHA - REPORTE OFICIAL', align=align_txt, ln=True)
             self.ln(5)
             
             self.set_draw_color(185, 28, 28)
@@ -276,7 +276,7 @@ def generate_pdf():
             self.set_y(-15)
             self.set_font('helvetica', 'I', 8)
             self.set_text_color(128, 128, 128)
-            self.cell(0, 10, f'Generado por Alpha Cloud Systems | Pagina {self.page_no()}', align='C')
+            self.cell(0, 10, f'Generado por Alpha Systems | Pagina {self.page_no()}', align='C')
 
     pdf = TacticPDF()
     pdf.add_page()
