@@ -59,9 +59,14 @@
         .btn-edit { background: #4B5563; }
         .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
 
-        /* --- MAIN CONTENT & TABS --- */
-        .main-content { max-width: 1500px; margin: 30px auto; padding: 0 20px; }
+        /* --- LAYOUT CON PUBLICIDAD --- */
+        .layout-wrapper { display: flex; justify-content: center; gap: 20px; padding: 0; max-width: 1900px; margin: 0 auto; }
+        .ad-sidebar { width: 160px; min-width: 160px; height: 600px; position: sticky; top: 20px; border-radius: 10px; overflow: hidden; background: #f3f4f6; }
+        .ad-sidebar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .main-content { flex: 1; max-width: 1400px; margin: 30px 0; padding: 0 10px; min-width: 0; }
         
+        /* --- TABS --- */
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 2px solid #E5E7EB; padding-bottom: 10px; overflow-x: auto; white-space: nowrap; }
         .tab-btn { background: none; border: none; padding: 12px 20px; font-weight: 800; font-size: 13px; cursor: pointer; color: #6B7280; transition: 0.3s; border-radius: 8px; }
         .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(185, 28, 28, 0.2); }
@@ -81,24 +86,18 @@
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- FILTROS Y TABLA RESPONSIVE --- */
-        .tactical-filters {
-            background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end;
-            border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
+        /* --- FILTROS Y TABLA --- */
+        .tactical-filters { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .filter-box label { font-size: 10px; font-weight: 900; color: var(--primary); margin-bottom: 6px; display: block; text-transform: uppercase; }
-
         .sort-btns { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
         .btn-sort { background: white; border: 1px solid #D1D5DB; padding: 8px 15px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 800; transition: 0.2s; color: #374151; }
         .btn-sort:hover { background: #F3F4F6; border-color: #9CA3AF; }
-
+        
         .table-wrap { background: white; border-radius: 15px; overflow-x: auto; border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th { background: var(--dark); color: white; padding: 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
         td { padding: 16px; text-align: center; font-weight: 700; border-bottom: 1px solid #E5E7EB; font-size: 13px; color: #111827; }
         tr:hover { background: #F9FAFB; }
-        
         .badge-score { background: var(--primary); color: white; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 900; box-shadow: 0 2px 4px rgba(185, 28, 28, 0.2); }
         .badge-group { background: #E5E7EB; color: #374151; padding: 4px 10px; border-radius: 20px; font-size: 11px; }
 
@@ -108,8 +107,7 @@
         .close-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #9CA3AF; transition: 0.2s; }
         .close-btn:hover { color: var(--primary); transform: scale(1.1); }
 
-        /* --- CALENDARIO FULLCALENDAR (MODERNO & RESPONSIVE) --- */
-        #tab-calendar { animation: fadeIn 0.4s ease; }
+        /* --- CALENDARIO FULLCALENDAR --- */
         .fc { background: white; padding: 20px; border-radius: 15px; border: 1px solid #E5E7EB; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); font-family: 'Inter', sans-serif; }
         .fc-theme-standard th { border-color: #F3F4F6; padding: 12px 0; background: #F9FAFB; text-transform: uppercase; font-size: 11px; color: #6B7280; font-weight: 800; }
         .fc-theme-standard td, .fc-theme-standard .fc-scrollgrid { border-color: #F3F4F6; }
@@ -123,17 +121,15 @@
         .fc-button-active { background-color: var(--dark) !important; color: white !important; border-color: var(--dark) !important; }
         .fc-timegrid-now-indicator-line { border-color: var(--primary) !important; border-width: 2px !important; }
         .fc-timegrid-now-indicator-arrow { border-color: var(--primary) !important; border-width: 6px !important; }
-        .fc-timegrid-col-frame { padding-right: 2px; }
 
-        /* --- MEDIA QUERIES (AJUSTES PARA CELULARES) --- */
+        /* --- MEDIA QUERIES --- */
+        @media (max-width: 1400px) { .ad-sidebar { display: none; } }
         @media (max-width: 768px) {
             .navbar { flex-direction: column; text-align: center; }
             .nav-btns { justify-content: center; width: 100%; }
             .tabs-nav { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 5px; }
             .tab-btn { flex: 0 0 auto; font-size: 12px; padding: 10px 15px; }
             .tactical-filters { grid-template-columns: 1fr; }
-            
-            /* Calendario Móvil */
             .fc-toolbar { flex-direction: column; gap: 15px; }
             .fc { padding: 10px; }
             .fc-toolbar-title { font-size: 1.2em !important; }
@@ -198,256 +194,187 @@
         </div>
     </nav>
 
-    <div class="main-content">
+    <div class="layout-wrapper">
         
-        <div class="tabs-nav">
-            {% if role in ['partner', 'membresia'] %}
-            <button class="tab-btn active" onclick="switchTab('dashboard', event)">
-                <i data-lucide="layout-dashboard" style="width:16px; display:inline-block; vertical-align:middle;"></i> DASHBOARD ESTADÍSTICO
-            </button>
-            {% endif %}
+        <aside class="ad-sidebar">
+            {% if ads and ads.banner_left %}<img src="{{ ads.banner_left }}">{% endif %}
+        </aside>
+
+        <div class="main-content">
             
-            <button class="tab-btn {% if role == 'admin' %}active{% endif %}" onclick="switchTab('table', event)">
-                <i data-lucide="table" style="width:16px; display:inline-block; vertical-align:middle;"></i> REGISTRO DE SESIONES
-            </button>
+            <div class="tabs-nav">
+                {% if role in ['partner', 'membresia'] %}
+                <button class="tab-btn active" onclick="switchTab('dashboard', event)">
+                    <i data-lucide="layout-dashboard" style="width:16px; display:inline-block; vertical-align:middle;"></i> DASHBOARD ESTADÍSTICO
+                </button>
+                {% endif %}
+                
+                <button class="tab-btn {% if role == 'admin' %}active{% endif %}" onclick="switchTab('table', event)">
+                    <i data-lucide="table" style="width:16px; display:inline-block; vertical-align:middle;"></i> REGISTRO DE SESIONES
+                </button>
 
-            <button class="tab-btn" onclick="switchTab('calendar', event)">
-                <i data-lucide="calendar" style="width:16px; display:inline-block; vertical-align:middle;"></i> CALENDARIO
-            </button>
+                <button class="tab-btn" onclick="switchTab('calendar', event)">
+                    <i data-lucide="calendar" style="width:16px; display:inline-block; vertical-align:middle;"></i> CALENDARIO
+                </button>
 
-            {% if role == 'admin' %}
-            <button class="tab-btn" onclick="switchTab('verify', event)">
-                <i data-lucide="shield-check" style="width:16px; display:inline-block; vertical-align:middle;"></i> VERIFICAR FIRMA
-            </button>
-            {% endif %}
-        </div>
-
-        {% if role in ['partner', 'membresia'] %}
-        <div id="tab-dashboard" class="tab-content active">
-            <div class="stats-grid" id="statsGrid">
-                </div>
-            <div class="charts-grid">
-                <div class="chart-box">
-                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">CURVA DE RENDIMIENTO (ÚLTIMAS SESIONES)</h3>
-                    <canvas id="lineChart"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">TASA DE ESCENARIOS EJECUTADOS</h3>
-                    <canvas id="doughnutChart"></canvas>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <div id="tab-table" class="tab-content {% if role == 'admin' %}active{% endif %}">
-            <div class="tactical-filters">
-                <div class="filter-box"><label>Desde Fecha</label><input type="date" id="dateFrom" class="input-ctrl"></div>
-                <div class="filter-box"><label>Hasta Fecha</label><input type="date" id="dateTo" class="input-ctrl"></div>
-                <div class="filter-box"><label>ID / Cédula</label><input type="text" id="searchID" class="input-ctrl" placeholder="Buscar ID..."></div>
-                <div class="filter-box"><label>Estación</label><input type="text" id="searchStation" class="input-ctrl" placeholder="ID Estación..."></div>
-                <div class="filter-box"><label>Escenario</label><input type="text" id="searchScenario" class="input-ctrl" placeholder="Escenario..."></div>
-                <div class="filter-box"><button class="btn-action" id="btnClearFilters" style="padding: 12px;">LIMPIAR</button></div>
-            </div>
-
-            <div class="sort-btns">
-                <button class="btn-sort" id="sortHigh">Mayor Puntaje ▲</button>
-                <button class="btn-sort" id="sortLow">Menor Puntaje ▼</button>
-            </div>
-
-            <div class="table-wrap">
-                <table id="alphaTable">
-                    <thead>
-                        <tr>
-                            <th>Fecha/Hora</th>
-                            <th>Estación</th>
-                            <th>Grupo / Empresa</th>
-                            <th>Identificación</th>
-                            <th>Tirador</th>
-                            <th>Escenario</th>
-                            <th>Puntaje</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        {% for r in records %}
-                        <tr class="data-row" data-score="{{ r.score }}">
-                            <td style="font-size: 12px;">{{ r.timestamp }}</td>
-                            <td>{{ r.sim_id }}</td>
-                            <td><span class="badge-group">{{ r.group_name }}</span></td>
-                            <td>{{ r.shooter_id }}</td>
-                            <td>{{ r.shooter_name | upper }}</td>
-                            <td>{{ r.scenario }}</td>
-                            <td><span class="badge-score">{{ r.score }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="tab-calendar" class="tab-content">
-            <div class="tactical-filters" style="margin-bottom: 20px;">
-                <div class="filter-box">
-                    <label>Filtrar Agendamientos</label>
-                    <input type="text" id="searchCalendar" class="input-ctrl" placeholder="Buscar escuela o palabra clave...">
-                </div>
                 {% if role == 'admin' %}
-                <div class="filter-box">
-                    <button class="btn-action" id="btnNewEvent" style="padding: 12px; background: var(--primary);">NUEVA CITA</button>
-                </div>
+                <button class="tab-btn" onclick="switchTab('verify', event)">
+                    <i data-lucide="shield-check" style="width:16px; display:inline-block; vertical-align:middle;"></i> VERIFICAR FIRMA
+                </button>
+                <button class="tab-btn" onclick="switchTab('ads', event)">
+                    <i data-lucide="image" style="width:16px; display:inline-block; vertical-align:middle;"></i> PUBLICIDAD
+                </button>
                 {% endif %}
             </div>
-            <div id="calendar"></div>
-        </div>
 
-        {% if role == 'admin' %}
-        <div id="tab-verify" class="tab-content">
-            <div class="tactical-filters" style="max-width: 600px; margin: 40px auto; display: block; text-align: center;">
-                <i data-lucide="shield-check" style="width: 50px; height: 50px; color: var(--primary); margin-bottom: 15px;"></i>
-                <h2 style="font-weight: 900; margin-bottom: 10px;">CENTRO DE VERIFICACIÓN CRIPTOGRÁFICA</h2>
-                <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px;">Ingrese el código de firma digital que se encuentra en el pie de página del documento PDF para comprobar su autenticidad y origen.</p>
-                
-                <div class="input-group">
-                    <input type="text" id="vSignature" class="input-ctrl" placeholder="Ej: ALPHA-A1B2C3D4-XXXXX..." style="text-align: center; font-weight: bold; letter-spacing: 1px;">
+            {% if role in ['partner', 'membresia'] %}
+            <div id="tab-dashboard" class="tab-content active">
+                <div class="stats-grid" id="statsGrid">
+                    </div>
+                <div class="charts-grid">
+                    <div class="chart-box">
+                        <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">CURVA DE RENDIMIENTO (ÚLTIMAS SESIONES)</h3>
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">TASA DE ESCENARIOS EJECUTADOS</h3>
+                        <canvas id="doughnutChart"></canvas>
+                    </div>
                 </div>
-                <button class="btn-action" id="btnVerifySig">Verificar Autenticidad</button>
-                
-                <div id="verifyResult" style="display: none; margin-top: 25px; padding: 20px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; text-align: left;">
-                    <h3 style="color: #059669; font-weight: 900; margin-bottom: 15px; text-align: center;"><i data-lucide="check-circle" style="width:18px; vertical-align:middle;"></i> FIRMA DIGITAL VÁLIDA</h3>
-                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Tirador:</strong> <span id="vrShooter"></span></p>
-                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Identificación:</strong> <span id="vrId"></span></p>
-                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Generado por (Partner):</strong> <span id="vrPartner" class="badge-group"></span></p>
-                    <p style="font-size: 13px; margin-bottom: 8px;"><strong>Filtro Desde:</strong> <span id="vrFrom"></span></p>
-                    <p style="font-size: 13px; margin-bottom: 20px;"><strong>Filtro Hasta:</strong> <span id="vrTo"></span></p>
+            </div>
+            {% endif %}
+
+            <div id="tab-table" class="tab-content {% if role == 'admin' %}active{% endif %}">
+                <div class="tactical-filters">
+                    <div class="filter-box"><label>Desde Fecha</label><input type="date" id="dateFrom" class="input-ctrl"></div>
+                    <div class="filter-box"><label>Hasta Fecha</label><input type="date" id="dateTo" class="input-ctrl"></div>
+                    <div class="filter-box"><label>ID / Cédula</label><input type="text" id="searchID" class="input-ctrl" placeholder="Buscar ID..."></div>
+                    <div class="filter-box"><label>Estación</label><input type="text" id="searchStation" class="input-ctrl" placeholder="ID Estación..."></div>
+                    <div class="filter-box"><label>Escenario</label><input type="text" id="searchScenario" class="input-ctrl" placeholder="Escenario..."></div>
+                    <div class="filter-box"><button class="btn-action" id="btnClearFilters" style="padding: 12px;">LIMPIAR</button></div>
+                </div>
+
+                <div class="sort-btns">
+                    <button class="btn-sort" id="sortHigh">Mayor Puntaje ▲</button>
+                    <button class="btn-sort" id="sortLow">Menor Puntaje ▼</button>
+                </div>
+
+                <div class="table-wrap">
+                    <table id="alphaTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Estación</th>
+                                <th>Grupo / Empresa</th>
+                                <th>Identificación</th>
+                                <th>Tirador</th>
+                                <th>Escenario</th>
+                                <th>Puntaje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            {% for r in records %}
+                            <tr class="data-row" data-score="{{ r.score }}">
+                                <td style="font-size: 12px;">{{ r.timestamp }}</td>
+                                <td>{{ r.sim_id }}</td>
+                                <td><span class="badge-group">{{ r.group_name }}</span></td>
+                                <td>{{ r.shooter_id }}</td>
+                                <td>{{ r.shooter_name | upper }}</td>
+                                <td>{{ r.scenario }}</td>
+                                <td><span class="badge-score">{{ r.score }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-calendar" class="tab-content">
+                <div class="tactical-filters" style="margin-bottom: 20px;">
+                    <div class="filter-box">
+                        <label>Filtrar Agendamientos</label>
+                        <input type="text" id="searchCalendar" class="input-ctrl" placeholder="Buscar escuela o palabra clave...">
+                    </div>
+                    {% if role == 'admin' %}
+                    <div class="filter-box">
+                        <button class="btn-action" id="btnNewEvent" style="padding: 12px; background: var(--primary);">NUEVA CITA</button>
+                    </div>
+                    {% endif %}
+                </div>
+                <div id="calendar"></div>
+            </div>
+
+            {% if role == 'admin' %}
+            <div id="tab-verify" class="tab-content">
+                <div class="tactical-filters" style="max-width: 600px; margin: 40px auto; display: block; text-align: center;">
+                    <i data-lucide="shield-check" style="width: 50px; height: 50px; color: var(--primary); margin-bottom: 15px;"></i>
+                    <h2 style="font-weight: 900; margin-bottom: 10px;">CENTRO DE VERIFICACIÓN CRIPTOGRÁFICA</h2>
+                    <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px;">Ingrese el código de firma digital que se encuentra en el pie de página del documento PDF para comprobar su autenticidad y origen.</p>
                     
-                    <button class="btn-action" id="btnDownloadVerified" style="background: var(--primary); padding: 12px; font-size: 12px; display: flex; justify-content: center; gap: 8px;"><i data-lucide="download" style="width:16px;"></i> DESCARGAR PDF ORIGINAL</button>
-                </div>
-                
-                <div id="verifyError" style="display: none; margin-top: 20px; padding: 15px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 12px; color: #B91C1C; font-weight: bold; font-size: 13px;">
-                    <i data-lucide="alert-triangle" style="width:18px; vertical-align:middle;"></i> <span id="verifyErrorMsg">FIRMA INVÁLIDA O CORRUPTA.</span>
+                    <div class="input-group">
+                        <input type="text" id="vSignature" class="input-ctrl" placeholder="Ej: ALPHA-A1B2C3D4-XXXXX..." style="text-align: center; font-weight: bold; letter-spacing: 1px;">
+                    </div>
+                    <button class="btn-action" id="btnVerifySig">Verificar Autenticidad</button>
+                    
+                    <div id="verifyResult" style="display: none; margin-top: 25px; padding: 20px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; text-align: left;">
+                        <h3 style="color: #059669; font-weight: 900; margin-bottom: 15px; text-align: center;"><i data-lucide="check-circle" style="width:18px; vertical-align:middle;"></i> FIRMA DIGITAL VÁLIDA</h3>
+                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Tirador:</strong> <span id="vrShooter"></span></p>
+                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Identificación:</strong> <span id="vrId"></span></p>
+                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Generado por (Partner):</strong> <span id="vrPartner" class="badge-group"></span></p>
+                        <p style="font-size: 13px; margin-bottom: 8px;"><strong>Filtro Desde:</strong> <span id="vrFrom"></span></p>
+                        <p style="font-size: 13px; margin-bottom: 20px;"><strong>Filtro Hasta:</strong> <span id="vrTo"></span></p>
+                        
+                        <button class="btn-action" id="btnDownloadVerified" style="background: var(--primary); padding: 12px; font-size: 12px; display: flex; justify-content: center; gap: 8px;"><i data-lucide="download" style="width:16px;"></i> DESCARGAR PDF ORIGINAL</button>
+                    </div>
+                    
+                    <div id="verifyError" style="display: none; margin-top: 20px; padding: 15px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 12px; color: #B91C1C; font-weight: bold; font-size: 13px;">
+                        <i data-lucide="alert-triangle" style="width:18px; vertical-align:middle;"></i> <span id="verifyErrorMsg">FIRMA INVÁLIDA O CORRUPTA.</span>
+                    </div>
                 </div>
             </div>
-        </div>
-        {% endif %}
 
-    </div> <div class="modal" id="regModal">
-        <div class="modal-body">
-            <i data-lucide="x" class="close-btn" id="closeRegModal"></i>
-            <h2 style="font-weight: 900; margin-bottom: 20px;">NUEVO REGISTRO</h2>
-            <div class="input-group">
-                <label>Tipo de Perfil</label>
-                <select id="rRole" class="input-ctrl">
-                    <option value="partner">Partner / Escuela</option>
-                    <option value="membresia">Membresía Individual</option>
-                </select>
-            </div>
-            <div class="input-group"><label>Usuario</label><input type="text" id="rUser" class="input-ctrl"></div>
-            <div class="input-group"><label>Contraseña</label><input type="password" id="rPass" class="input-ctrl"></div>
-            
-            <div id="p-fields">
-                <div class="input-group"><label>Ubicación</label><input type="text" id="rLoc" class="input-ctrl"></div>
-                <div class="input-group"><label>Grupo</label><input type="text" id="rGrp" class="input-ctrl"></div>
-                <div class="input-group">
-                    <label>Logo de Escuela (Opcional)</label>
-                    <input type="file" id="rLogo" class="input-ctrl" accept="image/*" style="padding: 10px;">
+            <div id="tab-ads" class="tab-content">
+                <div class="tactical-filters" style="max-width: 800px; margin: 40px auto; display: block;">
+                    <h2 style="font-weight: 900; margin-bottom: 10px; text-align: center;">GESTIÓN DE PUBLICIDAD</h2>
+                    <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px; text-align: center;">Añade enlaces directos a imágenes para actualizar los banners laterales y la ventana de bienvenida.</p>
+                    
+                    <div style="margin-top:20px; display: grid; gap: 20px;">
+                        <div class="input-group">
+                            <label>Banner Izquierdo (Recomendado 160x600 URL)</label>
+                            <input type="text" id="url-left" class="input-ctrl" value="{% if ads %}{{ ads.banner_left }}{% endif %}">
+                            <button onclick="saveAd('banner_left', 'url-left')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Izquierdo</button>
+                        </div>
+                        <div class="input-group">
+                            <label>Banner Derecho (Recomendado 160x600 URL)</label>
+                            <input type="text" id="url-right" class="input-ctrl" value="{% if ads %}{{ ads.banner_right }}{% endif %}">
+                            <button onclick="saveAd('banner_right', 'url-right')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Derecho</button>
+                        </div>
+                        <div class="input-group">
+                            <label>Modal Popup de Bienvenida (URL)</label>
+                            <input type="text" id="url-modal" class="input-ctrl" value="{% if ads %}{{ ads.modal }}{% endif %}">
+                            <button onclick="saveAd('modal', 'url-modal')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Modal Popup</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div id="m-fields" style="display: none;">
-                <div class="input-group"><label>Sucursal</label><input type="text" id="rSuc" class="input-ctrl"></div>
-                <div class="input-group"><label>ID Tirador</label><input type="text" id="rIdDoc" class="input-ctrl"></div>
-            </div>
-            <button class="btn-action" id="btnSaveUser">Finalizar Registro</button>
+            {% endif %}
+
         </div>
+
+        <aside class="ad-sidebar">
+            {% if ads and ads.banner_right %}<img src="{{ ads.banner_right }}">{% endif %}
+        </aside>
+
     </div>
 
-    {% if role == 'admin' %}
-    <div class="modal" id="editModal">
-        <div class="modal-body">
-            <i data-lucide="x" class="close-btn" id="closeEditModal"></i>
-            <h2 style="font-weight: 900; margin-bottom: 20px;">EDITAR PARTNER</h2>
-            <div class="input-group">
-                <label>Seleccionar Escuela / Partner</label>
-                <select id="eUserId" class="input-ctrl">
-                    <option value="">-- Seleccione para editar --</option>
-                    {% for p in partners %}
-                    <option value="{{ p.id }}">{{ p.username }} (Grupo: {{ p.group_name }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <p style="font-size: 11px; color: #666; margin-bottom: 15px;">* Deja en blanco los campos que NO deseas cambiar.</p>
-            <div class="input-group"><label>Nueva Contraseña</label><input type="password" id="ePass" class="input-ctrl"></div>
-            <div class="input-group"><label>Nueva Ubicación</label><input type="text" id="eLoc" class="input-ctrl"></div>
-            <div class="input-group"><label>Nuevo Nombre de Grupo</label><input type="text" id="eGrp" class="input-ctrl"></div>
-            <div class="input-group">
-                <label>Nuevo Logo (Reemplazar)</label>
-                <input type="file" id="eLogo" class="input-ctrl" accept="image/*" style="padding: 10px;">
-            </div>
-            <button class="btn-action" id="btnUpdatePartner">Actualizar Datos</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="bookingModal">
-        <div class="modal-body">
-            <i data-lucide="x" class="close-btn" id="closeBookingModal"></i>
-            <h2 style="font-weight: 900; margin-bottom: 20px;" id="bookingModalTitle">NUEVA CITA / AGENDAMIENTO</h2>
-            <input type="hidden" id="bId">
-            <div class="input-group"><label>Título o Nombre del Evento</label><input type="text" id="bTitle" class="input-ctrl"></div>
-            <div class="input-group">
-                <label>Asignar a Escuela / Membresía</label>
-                <select id="bUser" class="input-ctrl">
-                    <option value="">-- Seleccione Usuario Registrado --</option>
-                    {% for u in users_list %}
-                    <option value="{{ u.username }}">{{ u.username | upper }} (Perfil: {{ u.role | upper }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="input-group"><label>Inicio (Día y Hora)</label><input type="datetime-local" id="bStart" class="input-ctrl"></div>
-            <div class="input-group"><label>Fin (Día y Hora)</label><input type="datetime-local" id="bEnd" class="input-ctrl"></div>
-            <div class="input-group"><label>Notas / Requerimientos</label><input type="text" id="bNotes" class="input-ctrl"></div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn-action" id="btnSaveBooking" style="flex: 1;">GUARDAR CITA</button>
-                <button class="btn-action" id="btnDeleteBooking" style="background: #ef4444; display: none; padding: 10px;">ELIMINAR</button>
-            </div>
+    {% if ads and ads.modal %}
+    <div id="adWelcomeModal" class="modal" style="display: flex;">
+        <div class="modal-body" style="max-width: 500px; padding: 10px; border-top: none; background: transparent; box-shadow: none;">
+            <i data-lucide="x" class="close-btn" id="closeAdModal" style="background: white; border-radius: 50%; padding: 5px; top: 0; right: 0; z-index: 10;"></i>
+            <img src="{{ ads.modal }}" style="width: 100%; border-radius: 10px; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
         </div>
     </div>
     {% endif %}
-
-    <div class="modal" id="infoBookingModal">
-        <div class="modal-body">
-            <i data-lucide="x" class="close-btn" id="closeInfoBookingModal"></i>
-            <h2 style="font-weight: 900; margin-bottom: 20px; color: var(--primary); text-align: center;">DETALLE DE CITA</h2>
-            <div style="font-size: 14px; line-height: 1.8; color: #374151;">
-                <p><strong>ACTIVIDAD:</strong> <span id="infoTitle" style="font-weight: 700; color: #000;"></span></p>
-                <p><strong>INICIO:</strong> <span id="infoStart"></span></p>
-                <p><strong>FIN:</strong> <span id="infoEnd"></span></p>
-                <p style="margin-top: 15px;"><strong>NOTAS ASIGNADAS:</strong></p>
-                <div id="infoNotes" style="background: #F9FAFB; padding: 15px; border-radius: 8px; border: 1px solid #E5E7EB; font-style: italic;"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="pdfModal">
-        <div class="modal-body">
-            <i data-lucide="x" class="close-btn" id="closePdfModal"></i>
-            <h2 style="font-weight: 900; margin-bottom: 20px;">GENERAR REPORTE PDF</h2>
-            <div class="input-group">
-                <label>Seleccionar Tirador (ID)</label>
-                <select id="pdfShooter" class="input-ctrl">
-                    <option value="">-- Seleccione --</option>
-                    {% for s in shooters %}
-                    <option value="{{ s.shooter_id }}">{{ s.shooter_id }} - {{ s.shooter_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="input-group"><label>Desde Fecha</label><input type="date" id="pdfFrom" class="input-ctrl"></div>
-            <div class="input-group"><label>Hasta Fecha</label><input type="date" id="pdfTo" class="input-ctrl"></div>
-            <button class="btn-action" id="btnDownloadPdf">GENERAR DOCUMENTO</button>
-        </div>
-    </div>
-
-    {% endif %}
-
-    </div>
 
     <div class="modal" id="regModal">
         <div class="modal-body">
@@ -565,6 +492,8 @@
         </div>
     </div>
 
+    {% endif %}
+
     <script>
         // --- FUNCIÓN GLOBAL PARA CAMBIAR PESTAÑAS ---
         function switchTab(tabId, event) {
@@ -574,9 +503,37 @@
             if (event) event.currentTarget.classList.add('active');
         }
 
+        // --- FUNCIÓN GLOBAL PARA GUARDAR PUBLICIDAD ---
+        function saveAd(type, inputId) {
+            const url = document.getElementById(inputId).value;
+            fetch('/update_ads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: type, image_url: url })
+            }).then(() => {
+                alert('Publicidad actualizada correctamente. La página se recargará para ver los cambios.');
+                location.reload();
+            }).catch(e => {
+                alert('Hubo un error al actualizar la publicidad.');
+                console.error(e);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             // Inicializar Iconos
             lucide.createIcons();
+
+            // Cierre Modal de Publicidad
+            const adClose = document.getElementById('closeAdModal');
+            if(adClose) adClose.onclick = () => document.getElementById('adWelcomeModal').style.display = 'none';
+
+            // Descarga de Excel
+            const btnDownloadExcel = document.getElementById('btnDownloadExcel');
+            if(btnDownloadExcel) {
+                btnDownloadExcel.addEventListener('click', () => {
+                    window.location.href = '/download_excel';
+                });
+            }
 
             // ================== LÓGICA DE GRÁFICAS Y DASHBOARD ==================
             const rawData = `{{ chart_data | safe }}`;
@@ -648,24 +605,6 @@
                     console.error("Error al procesar gráficas:", e);
                 }
             }
-
-
-
-
-            // Descargar Excel General
-            const btnDownloadExcel = document.getElementById('btnDownloadExcel');
-            if(btnDownloadExcel) {
-                btnDownloadExcel.addEventListener('click', () => {
-                    window.location.href = '/download_excel';
-                });
-            }
-
-
-
-
-
-
-
 
             // ================== INICIALIZAR CALENDARIO (FULLCALENDAR) ==================
             const calendarEl = document.getElementById('calendar');
@@ -753,6 +692,9 @@
             const regModal = document.getElementById('regModal');
             const pdfModal = document.getElementById('pdfModal');
             const editModal = document.getElementById('editModal');
+            const bModal = document.getElementById('bookingModal');
+            const iModal = document.getElementById('infoBookingModal');
+            const adModal = document.getElementById('adWelcomeModal');
             
             const btnOpenReg = document.getElementById('btnOpenReg');
             const btnOpenPdf = document.getElementById('btnOpenPdf');
@@ -776,10 +718,9 @@
                 if (event.target == regModal) regModal.style.display = "none";
                 if (event.target == pdfModal) pdfModal.style.display = "none";
                 if (event.target == editModal) editModal.style.display = "none";
-                const bModal = document.getElementById('bookingModal');
                 if (bModal && event.target == bModal) bModal.style.display = "none";
-                const iModal = document.getElementById('infoBookingModal');
                 if (iModal && event.target == iModal) iModal.style.display = "none";
+                if (adModal && event.target == adModal) adModal.style.display = "none";
             }
 
             // ================== LÓGICA MODAL ADMIN AGENDAMIENTO ==================
@@ -864,7 +805,6 @@
                         const formData = new FormData();
                         formData.append('image', logoFile);
                         try {
-                            // Subida a la API de ImgBB
                             const imgbbRes = await fetch('https://api.imgbb.com/1/upload?key=df01bb05ce03159d54c33e1e22eba2cf', {
                                 method: 'POST', body: formData
                             });
@@ -915,7 +855,7 @@
                     btnUpdatePartner.disabled = true;
 
                     let uploadedLogoUrl = "";
-                    const logoFile = document.getElementById('eLogo').files[0];
+                    const logoFile = document.getElementById('eLogo') ? document.getElementById('eLogo').files[0] : null;
 
                     if (logoFile) {
                         const formData = new FormData();

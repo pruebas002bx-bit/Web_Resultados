@@ -271,6 +271,47 @@ def verify_signature():
     except:
         return jsonify({"status": "error", "message": "Firma digital inválida, alterada o no reconocida."})
 
+
+
+
+
+# --- NUEVO MODELO PARA PUBLICIDAD ---
+class AdContent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(20)) # 'banner_left', 'banner_right', 'modal'
+    image_url = db.Column(db.String(500))
+    active = db.Column(db.Boolean, default=True)
+
+# --- RUTAS DE GESTIÓN (Añadir en la sección de Admin) ---
+@app.route('/update_ads', methods=['POST'])
+@login_required
+def update_ads():
+    if session.get('role') != 'admin': return "No autorizado", 403
+    data = request.json
+    # Eliminar anteriores y guardar nuevas urls
+    AdContent.query.filter_by(type=data['type']).delete()
+    new_ad = AdContent(type=data['type'], image_url=data['image_url'])
+    db.session.add(new_ad)
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+# Modificar el context_processor o la ruta /dashboard para pasar los ads
+@app.context_processor
+def inject_ads():
+    ads = AdContent.query.filter_by(active=True).all()
+    ad_dict = {ad.type: ad.image_url for ad in ads}
+    return dict(ads=ad_dict)
+
+
+
+
+
+
+
+
+
+
+
 @app.route('/generate_pdf')
 @login_required
 def generate_pdf():
