@@ -15,25 +15,28 @@
         
         body { background-color: #F9FAFB; color: var(--dark); min-height: 100vh; overflow-x: hidden; }
 
-        /* --- VISTA LOGIN Y PUBLICIDAD --- */
+        /* --- VISTA LOGIN Y PUBLICIDAD INMERSIVA (100VH) --- */
         .login-container { 
-            min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 40px;
+            height: 100vh; width: 100vw; display: flex; justify-content: space-between; align-items: stretch; overflow: hidden;
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
                         url('https://i.ibb.co/MkwvwMgp/Fondo.png') no-repeat center center fixed; 
-            background-size: cover; padding: 20px;
+            background-size: cover; margin: 0; padding: 0;
+        }
+
+        .login-center {
+            flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10;
         }
         
         .login-card { 
             background: var(--glass); padding: 40px 30px; border-radius: 20px; width: 100%; max-width: 420px; 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border-top: 6px solid var(--primary); z-index: 10;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border-top: 6px solid var(--primary);
         }
         .login-card img { width: 120px; margin-bottom: 20px; }
         .login-card h2 { font-weight: 900; letter-spacing: -1px; margin-bottom: 30px; text-transform: uppercase; }
 
         .login-ad {
-            width: 160px; height: 600px; border-radius: 12px; overflow: hidden; 
-            box-shadow: 0 25px 50px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5);
-            display: flex; align-items: center; justify-content: center;
+            flex: 0 0 20%; max-width: 350px; min-width: 160px; height: 100vh; background: rgba(0,0,0,0.8);
+            display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
         }
         .login-ad img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -67,8 +70,8 @@
         .btn-edit { background: #4B5563; }
         .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
 
-        /* --- CONTENIDO PRINCIPAL --- */
-        .main-content { max-width: 1500px; margin: 30px auto; padding: 0 20px; }
+        /* --- CONTENIDO PRINCIPAL DASHBOARD --- */
+        .main-content { max-width: 1500px; margin: 30px auto; padding: 0 20px; min-width: 0; }
         
         /* --- TABS --- */
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 2px solid #E5E7EB; padding-bottom: 10px; overflow-x: auto; white-space: nowrap; }
@@ -158,28 +161,30 @@
         </div>
         {% endif %}
 
-        <div class="login-card">
-            <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Alpha Logo">
-            <h2>ACCESO ALPHA CLOUD</h2>
-            <form action="/login" method="POST">
-                <div class="input-group">
-                    <label>Tipo de Unidad</label>
-                    <select name="role" class="input-ctrl">
-                        <option value="admin">Administrador Central</option>
-                        <option value="partner">Unidad Partner / Escuela</option>
-                        <option value="membresia">Membresía Individual</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Identificador de Usuario</label>
-                    <input type="text" name="username" class="input-ctrl" required>
-                </div>
-                <div class="input-group">
-                    <label>Código de Acceso</label>
-                    <input type="password" name="password" class="input-ctrl" required>
-                </div>
-                <button type="submit" class="btn-action">Iniciar Sesión</button>
-            </form>
+        <div class="login-center">
+            <div class="login-card">
+                <img src="https://i.ibb.co/j9Pp0YLz/Logo-2.png" alt="Alpha Logo">
+                <h2>ACCESO ALPHA CLOUD</h2>
+                <form action="/login" method="POST">
+                    <div class="input-group">
+                        <label>Tipo de Unidad</label>
+                        <select name="role" class="input-ctrl">
+                            <option value="admin">Administrador Central</option>
+                            <option value="partner">Unidad Partner / Escuela</option>
+                            <option value="membresia">Membresía Individual</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Identificador de Usuario</label>
+                        <input type="text" name="username" class="input-ctrl" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Código de Acceso</label>
+                        <input type="password" name="password" class="input-ctrl" required>
+                    </div>
+                    <button type="submit" class="btn-action">Iniciar Sesión</button>
+                </form>
+            </div>
         </div>
 
         {% if banner_right %}
@@ -355,21 +360,21 @@
         <div id="tab-ads" class="tab-content">
             <div class="tactical-filters" style="max-width: 800px; margin: 40px auto; display: block;">
                 <h2 style="font-weight: 900; margin-bottom: 10px; text-align: center;">GESTIÓN DE PUBLICIDAD</h2>
-                <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px; text-align: center;">Añade enlaces directos a imágenes para actualizar los banners laterales del login y la ventana de bienvenida.</p>
+                <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px; text-align: center;">Añade enlaces directos a imágenes para actualizar los banners laterales del login y la ventana de bienvenida. <strong style="color: var(--primary);">Deben terminar en .png o .jpg</strong></p>
                 
                 <div style="margin-top:20px; display: grid; gap: 20px;">
                     <div class="input-group">
-                        <label>Banner Login Izquierdo (160x600 URL)</label>
+                        <label>Banner Login Izquierdo (160x600 URL Directa)</label>
                         <input type="text" id="url-left" class="input-ctrl" value="{{ banner_left }}">
                         <button onclick="saveAd('banner_left', 'url-left')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Izquierdo</button>
                     </div>
                     <div class="input-group">
-                        <label>Banner Login Derecho (160x600 URL)</label>
+                        <label>Banner Login Derecho (160x600 URL Directa)</label>
                         <input type="text" id="url-right" class="input-ctrl" value="{{ banner_right }}">
                         <button onclick="saveAd('banner_right', 'url-right')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Derecho</button>
                     </div>
                     <div class="input-group">
-                        <label>Modal Popup Dashboard (URL)</label>
+                        <label>Modal Popup Dashboard (URL Directa)</label>
                         <input type="text" id="url-modal" class="input-ctrl" value="{{ banner_modal }}">
                         <button onclick="saveAd('modal', 'url-modal')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Modal Popup</button>
                     </div>
