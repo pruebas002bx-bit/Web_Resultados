@@ -167,7 +167,6 @@ def generate_pdf():
     # --- MÉTODO ROBUSTO: GRÁFICA VÍA API (Sin colapsar el servidor) ---
     chart_data = None
     try:
-        # Configuración de QuickChart Nivel AAA
         chart_config = {
             "type": "line",
             "data": {
@@ -189,16 +188,13 @@ def generate_pdf():
             }
         }
         
-        # Convertir JSON a formato seguro para URL
         encoded_config = urllib.parse.quote(json.dumps(chart_config))
         chart_url = f"https://quickchart.io/chart?w=700&h=250&bkg=white&c={encoded_config}"
         
-        # Petición GET limpia y rápida
         res = requests.get(chart_url, timeout=8)
         if res.status_code == 200:
             chart_data = io.BytesIO(res.content)
         else:
-            # Plan B: Google Charts si QuickChart falla
             scores_str = ",".join(map(str, scores))
             g_url = f"https://chart.googleapis.com/chart?cht=lc&chs=700x250&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5&chds=a"
             g_res = requests.get(g_url, timeout=8)
@@ -214,7 +210,8 @@ def generate_pdf():
             try: 
                 logo_res = requests.get('https://i.ibb.co/j9Pp0YLz/Logo-2.png', timeout=5)
                 if logo_res.status_code == 200:
-                    self.image(io.BytesIO(logo_res.content), 10, 8, 40, name="logo.png")
+                    # FIX AQUÍ: Se eliminó el parámetro name="logo.png" para evitar el error de Python
+                    self.image(io.BytesIO(logo_res.content), x=10, y=8, w=40)
             except: pass
             
             self.set_font('helvetica', 'B', 22)
@@ -290,8 +287,8 @@ def generate_pdf():
     
     if chart_data:
         try:
-            # El atributo name="grafica.png" permite incrustar la imagen en memoria
-            pdf.image(chart_data, x=15, w=180, name="grafica.png")
+            # FIX AQUÍ: Se eliminó el parámetro name="grafica.png"
+            pdf.image(chart_data, x=15, w=180)
             pdf.ln(2)
         except Exception as e:
             print("Error imprimiendo grafica en PDF:", e)
