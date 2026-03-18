@@ -6,9 +6,7 @@ from flask_cors import CORS
 from datetime import datetime
 from functools import wraps
 from io import BytesIO
-from xhtml2pdf import pisa
-from sqlalchemy import func
-from fpdf import FPDF
+from fpdf import FPDF # Usamos fpdf2 en lugar de xhtml2pdf
 
 
 app = Flask(__name__)
