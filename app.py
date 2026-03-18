@@ -382,16 +382,24 @@ def generate_pdf():
             self.ln(12)
 
         def footer(self):
-            self.set_y(-22)
+            self.set_y(-25) # Aumentamos un poco el margen para que quepan las líneas
             # Título de Seguridad
             self.set_font('helvetica', 'I', 6)
             self.set_text_color(128, 128, 128)
             self.cell(0, 4, 'CERTIFICADO DE AUTENTICIDAD CRIPTOGRÁFICA', align='C', ln=True)
-            # Texto y Firma generada en Bold
-            self.set_font('helvetica', 'B', 7)
+            
+            # Texto descriptivo
+            self.set_font('helvetica', '', 7)
             self.set_text_color(0, 0, 0)
-            self.cell(0, 4, f'Este documento está soportado por una firma digital inalterable: {alpha_signature}', align='C', ln=True)
+            self.cell(0, 4, 'Este documento está soportado por una firma digital inalterable:', align='C', ln=True)
+            
+            # Firma Digital con Multi_Cell para evitar que se corte
+            self.set_font('helvetica', 'B', 7)
+            # multi_cell(ancho, alto_fila, texto, bordes, alineación)
+            self.multi_cell(0, 3, alpha_signature, 0, 'C')
+            
             # Paginación normal
+            self.set_y(-12)
             self.set_font('helvetica', 'I', 7)
             self.set_text_color(128, 128, 128)
             self.cell(0, 4, f'Generado por Alpha Cloud Systems | Pagina {self.page_no()}', align='C')
