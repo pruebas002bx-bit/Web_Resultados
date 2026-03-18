@@ -295,16 +295,20 @@ def update_ads():
     db.session.commit()
     return jsonify({"status": "success"})
 
-# Modificar el context_processor o la ruta /dashboard para pasar los ads
 @app.context_processor
 def inject_ads():
-    ads = AdContent.query.filter_by(active=True).all()
-    ad_dict = {ad.type: ad.image_url for ad in ads}
-    return dict(ads=ad_dict)
-
-
-
-
+    try:
+        # Intenta cargar la publicidad
+        ads = AdContent.query.filter_by(active=True).all()
+        ad_dict = {ad.type: ad.image_url for ad in ads}
+        return dict(ads=ad_dict)
+    except Exception as e:
+        # Si la tabla no existe, evita que la app colapse y fuerza su creación
+        try:
+            db.create_all()
+        except:
+            pass
+        return dict(ads={})
 
 
 
