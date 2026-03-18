@@ -8,8 +8,6 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# NUEVO MÉTODO: SIN CONTRASEÑAS EN EL CÓDIGO (Anti-Bloqueo de GitHub)
-# Render usará la variable de entorno que configures en su panel.
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///local_fallback.db')
 
 # 1. Corrección del driver a pg8000
@@ -18,9 +16,12 @@ if db_url.startswith("postgres://"):
 elif db_url.startswith("postgresql://") and "pg8000" not in db_url:
     db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
 
-# 2. Corrección del SSL para pg8000
-if "sslmode=require" in db_url:
-    db_url = db_url.replace("?sslmode=require", "")
+# 2. LIMPIEZA ABSOLUTA: Cortar cualquier parámetro extra (?sslmode=require)
+if "?" in db_url:
+    db_url = db_url.split("?")[0]
+
+# 3. Forzar el contexto SSL nativo de Python que exige Aiven
+if "pg8000" in db_url:
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
