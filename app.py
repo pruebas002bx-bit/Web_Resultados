@@ -138,7 +138,6 @@ def generate_pdf():
     d_to_str = request.args.get('to', '').strip()
     filter_val = session.get('filter_val', '').strip()
     
-    # 1. Traer registros y filtrar por fecha real
     all_records = ScoreRecord.query.filter(
         func.lower(ScoreRecord.group_name) == func.lower(filter_val),
         ScoreRecord.shooter_id == s_id
@@ -157,70 +156,73 @@ def generate_pdf():
 
     if not records: return "No hay registros para este rango.", 404
 
-    # 2. Cálculos Estadísticos
+    # Estadísticas
     scores = [r.score for r in records]
     avg = sum(scores)/len(scores)
-    labels = [f"Sesión {i+1}" for i in range(len(records))]
+    labels = [f"Mision {i+1}" for i in range(len(records))]
 
-    # 3. Generación de Gráfica Profesional (QuickChart - Chart.js)
-    chart_config = {
-        "type": "line",
-        "data": {
-            "labels": labels,
-            "datasets": [{
-                "label": "Puntaje",
-                "data": scores,
-                "borderColor": "#B91C1C", # Rojo Alpha
-                "backgroundColor": "rgba(185, 28, 28, 0.15)", # Rojo semi-transparente
-                "borderWidth": 3,
-                "fill": True,
-                "pointBackgroundColor": "#000000",
-                "pointRadius": 4,
-                "tension": 0.3 # Curva suave
-            }]
-        },
-        "options": {
-            "plugins": { "legend": { "display": False } },
-            "scales": { 
-                "y": { "min": 0, "max": 100, "grid": { "color": "#E5E7EB" } },
-                "x": { "grid": { "display": False } }
-            }
-        }
-    }
-    
+    # Motor de Gráfica (Doble respaldo: QuickChart -> Google Charts)
     chart_data = None
     try:
-        # Petición POST robusta para evitar límites de URL
+        chart_config = {
+            "type": "line",
+            "data": {
+                "labels": labels,
+                "datasets": [{
+                    "label": "Puntaje",
+                    "data": scores,
+                    "borderColor": "#B91C1C",
+                    "backgroundColor": "rgba(185, 28, 28, 0.15)",
+                    "borderWidth": 3,
+                    "fill": True,
+                    "pointBackgroundColor": "#000000",
+                    "pointRadius": 4
+                }]
+            },
+            "options": {
+                "legend": { "display": False },
+                "scales": { 
+                    "yAxes": [{ "ticks": { "min": 0, "max": 100 } }],
+                    "xAxes": [{ "gridLines": { "display": False } }]
+                }
+            }
+        }
         chart_res = requests.post(
             'https://quickchart.io/chart',
             json={"chart": chart_config, "width": 800, "height": 250, "format": "png", "backgroundColor": "white"},
-            timeout=10
+            timeout=5
         )
         if chart_res.status_code == 200:
             chart_data = io.BytesIO(chart_res.content)
+        else:
+            # Respaldo a Google Charts si QuickChart falla
+            scores_str = ",".join(map(str, scores))
+            g_url = f"https://chart.googleapis.com/chart?cht=lc&chs=800x250&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5"
+            g_res = requests.get(g_url, timeout=5)
+            if g_res.status_code == 200:
+                chart_data = io.BytesIO(g_res.content)
     except Exception as e:
-        print(f"Error generando gráfica: {e}")
+        print(f"Error generando graficas: {e}")
 
-    # 4. Construcción del PDF Nivel AAA
     class TacticPDF(FPDF):
         def header(self):
             # FONDO BLANCO PARA EL LOGO
             try: 
-                # Se inserta el logo en la esquina superior izquierda
-                self.image('https://i.ibb.co/j9Pp0YLz/Logo-2.png', 10, 8, 40)
+                # Se descarga el logo en memoria para evitar fallos de lectura de FPDF
+                logo_res = requests.get('https://i.ibb.co/j9Pp0YLz/Logo-2.png', timeout=5)
+                if logo_res.status_code == 200:
+                    self.image(io.BytesIO(logo_res.content), 10, 8, 40, name="logo.png")
             except: pass
             
-            # Títulos alineados a la derecha
             self.set_font('helvetica', 'B', 22)
             self.set_text_color(0, 0, 0)
-            self.cell(0, 10, 'EXPEDIENTE TÁCTICO DE RENDIMIENTO', align='R', ln=True)
+            self.cell(0, 10, 'EXPEDIENTE TACTICO DE RENDIMIENTO', align='R', ln=True)
             
             self.set_font('helvetica', 'B', 9)
             self.set_text_color(185, 28, 28)
             self.cell(0, 6, 'SISTEMA ALPHA CLOUD - REPORTE OFICIAL CONFIDENCIAL', align='R', ln=True)
             self.ln(5)
             
-            # Línea separadora roja gruesa
             self.set_draw_color(185, 28, 28)
             self.set_line_width(1.2)
             self.line(10, 32, 200, 32)
@@ -230,18 +232,16 @@ def generate_pdf():
             self.set_y(-15)
             self.set_font('helvetica', 'I', 8)
             self.set_text_color(128, 128, 128)
-            self.cell(0, 10, f'Generado por Alpha Cloud Systems | Página {self.page_no()}', align='C')
+            self.cell(0, 10, f'Generado por Alpha Cloud Systems | Pagina {self.page_no()}', align='C')
 
     pdf = TacticPDF()
     pdf.add_page()
     
-    # --- SECCIÓN I: INFORMACIÓN DEL OPERADOR ---
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 11)
-    pdf.cell(190, 9, ' I. PERFIL DEL OPERADOR Y RESUMEN ESTADÍSTICO', ln=True, fill=True)
+    pdf.cell(190, 9, ' I. PERFIL DEL OPERADOR Y RESUMEN ESTADISTICO', ln=True, fill=True)
     
-    # Cuadro Gris de Datos
     pdf.set_fill_color(249, 250, 251)
     pdf.set_draw_color(229, 231, 235)
     pdf.set_line_width(0.2)
@@ -251,7 +251,7 @@ def generate_pdf():
     pdf.set_font('helvetica', 'B', 9)
     pdf.set_text_color(185, 28, 28)
     pdf.cell(47, 6, 'NOMBRE DEL TIRADOR', align='C')
-    pdf.cell(47, 6, 'IDENTIFICACIÓN', align='C')
+    pdf.cell(47, 6, 'IDENTIFICACION', align='C')
     pdf.cell(47, 6, 'UNIDAD / GRUPO', align='C')
     pdf.cell(49, 6, 'FECHA DE REPORTE', align='C', ln=True)
     
@@ -263,13 +263,11 @@ def generate_pdf():
     pdf.cell(49, 8, datetime.now().strftime("%d/%m/%Y"), align='C', ln=True)
     pdf.ln(10)
     
-    # Cajas de Estadísticas (Max, Min, Promedio)
     pdf.set_fill_color(255, 255, 255)
     pdf.set_draw_color(0, 0, 0)
-    pdf.cell(47, 10, f"MÁXIMO: {max(scores)}", border=1, align='C')
-    pdf.cell(47, 10, f"MÍNIMO: {min(scores)}", border=1, align='C')
+    pdf.cell(47, 10, f"MAXIMO: {max(scores)}", border=1, align='C')
+    pdf.cell(47, 10, f"MINIMO: {min(scores)}", border=1, align='C')
     
-    # Promedio en Rojo
     pdf.set_fill_color(185, 28, 28)
     pdf.set_text_color(255, 255, 255)
     pdf.set_draw_color(185, 28, 28)
@@ -281,52 +279,52 @@ def generate_pdf():
     pdf.cell(49, 10, f"MISIONES: {len(records)}", border=1, align='C', ln=True)
     pdf.ln(12)
 
-    # --- SECCIÓN II: GRÁFICA DE RENDIMIENTO ---
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 11)
-    pdf.cell(190, 9, ' II. TELEMETRÍA DE PROGRESO', ln=True, fill=True)
+    pdf.cell(190, 9, ' II. TELEMETRIA DE PROGRESO', ln=True, fill=True)
     pdf.ln(5)
     
     if chart_data:
-        # Se inserta la gráfica centrada y de alta calidad
-        pdf.image(chart_data, x=15, w=180)
-        pdf.ln(2)
+        try:
+            # name="grafica.png" es crìtico para que FPDF lea BytesIO
+            pdf.image(chart_data, x=15, w=180, name="grafica.png")
+            pdf.ln(2)
+        except:
+            pdf.set_text_color(100, 100, 100)
+            pdf.cell(190, 30, "[Error interno al plasmar la grafica]", border=1, align='C', ln=True)
+            pdf.ln(5)
     else:
         pdf.set_text_color(100, 100, 100)
         pdf.set_font('helvetica', 'I', 10)
-        pdf.cell(190, 30, "[Datos de telemetría gráfica no disponibles]", border=1, align='C', ln=True)
+        pdf.cell(190, 30, "[Datos de telemetria grafica no disponibles]", border=1, align='C', ln=True)
         pdf.ln(5)
 
-    # --- SECCIÓN III: TABLA DE MISIONES ---
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 11)
     pdf.cell(190, 9, ' III. DESGLOSE DETALLADO DE SESIONES', ln=True, fill=True)
     
-    # Encabezado de Tabla en Rojo
     pdf.set_fill_color(185, 28, 28)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 9)
     pdf.cell(45, 9, 'FECHA / HORA', fill=True, align='C')
     pdf.cell(80, 9, 'ESCENARIO', fill=True, align='C')
-    pdf.cell(35, 9, 'ESTACIÓN', fill=True, align='C')
+    pdf.cell(35, 9, 'ESTACION', fill=True, align='C')
     pdf.cell(30, 9, 'PUNTAJE', fill=True, align='C', ln=True)
     
     pdf.set_text_color(0, 0, 0)
     pdf.set_font('helvetica', '', 9)
-    pdf.set_draw_color(229, 231, 235) # Bordes grises suaves
+    pdf.set_draw_color(229, 231, 235)
     
     fill = False
     for r in records:
-        # Alternar colores de fila para legibilidad
         pdf.set_fill_color(249, 250, 251) if fill else pdf.set_fill_color(255, 255, 255)
         
         pdf.cell(45, 8, r.timestamp, border='B', align='C', fill=True)
         pdf.cell(80, 8, r.scenario.upper()[:35], border='B', align='C', fill=True)
         pdf.cell(35, 8, r.sim_id[:15], border='B', align='C', fill=True)
         
-        # Puntaje en negrita (y rojo si es >= 90)
         pdf.set_font('helvetica', 'B', 10)
         if r.score >= 90: pdf.set_text_color(185, 28, 28)
         pdf.cell(30, 8, str(r.score), border='B', align='C', fill=True, ln=True)
@@ -335,8 +333,6 @@ def generate_pdf():
         pdf.set_font('helvetica', '', 9)
         fill = not fill
 
-    # --- SECCIÓN IV: FIRMAS ---
-    # Revisar si hay espacio en la página para las firmas, sino agregar página
     if pdf.get_y() > 240:
         pdf.add_page()
     else:
@@ -346,20 +342,18 @@ def generate_pdf():
     pdf.set_draw_color(0, 0, 0)
     pdf.set_line_width(0.5)
     
-    # Líneas de Firma
     pdf.line(20, y_sig, 85, y_sig)
     pdf.line(125, y_sig, 190, y_sig)
     
     pdf.set_font('helvetica', 'B', 9)
     pdf.cell(95, 5, 'FIRMA DEL OPERADOR', align='C')
-    pdf.cell(95, 5, 'CERTIFICACIÓN AUTORIZADA', align='C', ln=True)
+    pdf.cell(95, 5, 'CERTIFICACION AUTORIZADA', align='C', ln=True)
     
     pdf.set_font('helvetica', '', 8)
     pdf.set_text_color(100, 100, 100)
     pdf.cell(95, 4, f'ID: {s_id}', align='C')
     pdf.cell(95, 4, filter_val.upper(), align='C', ln=True)
 
-    # --- FINALIZAR Y ENVIAR PDF ---
     pdf_bytes = bytes(pdf.output())
     return send_file(
         io.BytesIO(pdf_bytes),
@@ -371,18 +365,30 @@ def generate_pdf():
 
 @app.route('/api/upload_score', methods=['POST'])
 def upload_score():
+    from datetime import timedelta
     try:
         data = request.json
+        
+        # Ajuste de Zona Horaria: Servidor Render (UTC) - 5 Horas (Colombia)
+        hora_colombia = datetime.utcnow() - timedelta(hours=5)
+        
+        # Formato exacto: DD/MM/YYYY HH:MM AM/PM (Ej: 18/03/2026 04:41 AM)
+        fecha_correcta = hora_colombia.strftime("%d/%m/%Y %I:%M %p")
+        
         new_record = ScoreRecord(
-            sim_id=data.get('sim_id'), shooter_name=data.get('shooter_name'),
-            shooter_id=data.get('shooter_id'), group_name=data.get('group_name'),
-            scenario=data.get('scenario'), score=int(data.get('score', 0)),
-            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sim_id=data.get('sim_id', 'DESCONOCIDO'), 
+            shooter_name=data.get('shooter_name', 'TIRADOR'),
+            shooter_id=data.get('shooter_id', 'N/D'), 
+            group_name=data.get('group_name', 'NINGUNO'),
+            scenario=data.get('scenario', 'ESCENARIO'), 
+            score=int(data.get('score', 0)),
+            timestamp=fecha_correcta
         )
         db.session.add(new_record)
         db.session.commit()
         return jsonify({"status": "success"}), 200
-    except: return jsonify({"status": "error"}), 500
+    except Exception as e: 
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
