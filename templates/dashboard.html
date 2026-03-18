@@ -6,6 +6,7 @@
     <title>ALPHA CLOUD - Tactical Dashboard</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
         :root { --primary: #B91C1C; --dark: #000000; --glass: rgba(255, 255, 255, 0.95); }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; }
@@ -103,6 +104,14 @@
         .modal-body { background: white; width: 450px; border-radius: 20px; padding: 40px; position: relative; border-top: 6px solid var(--primary); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .close-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #999; transition: 0.2s; }
         .close-btn:hover { color: var(--primary); }
+
+        /* --- CALENDARIO FULLCALENDAR --- */
+        .fc { background: white; padding: 25px; border-radius: 15px; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .fc-event { cursor: pointer; border-radius: 4px; border: none; padding: 2px; }
+        .fc-timegrid-slot { height: 2.5em !important; } /* Tamaño para bloques de 15 min */
+        .fc-toolbar-title { font-weight: 900 !important; font-size: 1.2em !important; text-transform: uppercase; }
+        .fc-button-primary { background-color: var(--dark) !important; border-color: var(--dark) !important; text-transform: uppercase; font-weight: bold !important; }
+        .fc-button-active { background-color: var(--primary) !important; border-color: var(--primary) !important; }
     </style>
 </head>
 <body>
@@ -161,16 +170,23 @@
 
     <div class="main-content">
         
-        {% if role in ['partner', 'membresia'] %}
         <div class="tabs-nav">
+            {% if role in ['partner', 'membresia'] %}
             <button class="tab-btn active" onclick="switchTab('dashboard', event)">
                 <i data-lucide="layout-dashboard" style="width:16px; display:inline-block; vertical-align:middle;"></i> DASHBOARD ESTADÍSTICO
             </button>
-            <button class="tab-btn" onclick="switchTab('table', event)">
+            {% endif %}
+            
+            <button class="tab-btn {% if role == 'admin' %}active{% endif %}" onclick="switchTab('table', event)">
                 <i data-lucide="table" style="width:16px; display:inline-block; vertical-align:middle;"></i> REGISTRO DE SESIONES
+            </button>
+
+            <button class="tab-btn" onclick="switchTab('calendar', event)">
+                <i data-lucide="calendar" style="width:16px; display:inline-block; vertical-align:middle;"></i> CALENDARIO
             </button>
         </div>
 
+        {% if role in ['partner', 'membresia'] %}
         <div id="tab-dashboard" class="tab-content active">
             <div class="stats-grid" id="statsGrid">
                 </div>
@@ -185,12 +201,9 @@
                 </div>
             </div>
         </div>
-
-        <div id="tab-table" class="tab-content">
-        {% else %}
-        <div id="tab-table" class="tab-content active" style="display: block;">
         {% endif %}
 
+        <div id="tab-table" class="tab-content {% if role == 'admin' %}active{% endif %}">
             <div class="tactical-filters">
                 <div class="filter-box"><label>Desde Fecha</label><input type="date" id="dateFrom" class="input-ctrl"></div>
                 <div class="filter-box"><label>Hasta Fecha</label><input type="date" id="dateTo" class="input-ctrl"></div>
@@ -234,6 +247,22 @@
                 </table>
             </div>
         </div>
+
+        <div id="tab-calendar" class="tab-content">
+            <div class="tactical-filters" style="margin-bottom: 20px;">
+                <div class="filter-box">
+                    <label>Filtrar Agendamientos</label>
+                    <input type="text" id="searchCalendar" class="input-ctrl" placeholder="Buscar escuela o palabra clave...">
+                </div>
+                {% if role == 'admin' %}
+                <div class="filter-box">
+                    <button class="btn-action" id="btnNewEvent" style="padding: 12px; background: var(--primary);">NUEVA CITA</button>
+                </div>
+                {% endif %}
+            </div>
+            <div id="calendar"></div>
+        </div>
+
     </div>
 
     <div class="modal" id="regModal">
@@ -291,7 +320,47 @@
             <button class="btn-action" id="btnUpdatePartner">Actualizar Datos</button>
         </div>
     </div>
+    
+    <div class="modal" id="bookingModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" id="closeBookingModal"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px;" id="bookingModalTitle">NUEVA CITA / AGENDAMIENTO</h2>
+            <input type="hidden" id="bId">
+            <div class="input-group"><label>Título o Nombre del Evento</label><input type="text" id="bTitle" class="input-ctrl"></div>
+            <div class="input-group">
+                <label>Asignar a Escuela / Membresía</label>
+                <select id="bUser" class="input-ctrl">
+                    <option value="">-- Seleccione Usuario Registrado --</option>
+                    {% for u in users_list %}
+                    <option value="{{ u.username }}">{{ u.username | upper }} (Perfil: {{ u.role | upper }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-group"><label>Inicio (Día y Hora)</label><input type="datetime-local" id="bStart" class="input-ctrl"></div>
+            <div class="input-group"><label>Fin (Día y Hora)</label><input type="datetime-local" id="bEnd" class="input-ctrl"></div>
+            <div class="input-group"><label>Notas / Requerimientos</label><input type="text" id="bNotes" class="input-ctrl"></div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-action" id="btnSaveBooking" style="flex: 1;">GUARDAR CITA</button>
+                <button class="btn-action" id="btnDeleteBooking" style="background: #ef4444; display: none; padding: 10px;">ELIMINAR</button>
+            </div>
+        </div>
+    </div>
     {% endif %}
+
+    <div class="modal" id="infoBookingModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" id="closeInfoBookingModal"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px; color: var(--primary);">DETALLE DEL AGENDAMIENTO</h2>
+            <div style="font-size: 14px; line-height: 1.8;">
+                <p><strong>ACTIVIDAD:</strong> <span id="infoTitle" style="font-weight: 700;"></span></p>
+                <p><strong>INICIO:</strong> <span id="infoStart"></span></p>
+                <p><strong>FIN:</strong> <span id="infoEnd"></span></p>
+                <p style="margin-top: 15px;"><strong>NOTAS ASIGNADAS:</strong></p>
+                <div id="infoNotes" style="background: #F9FAFB; padding: 15px; border-radius: 8px; border: 1px solid #EEE; font-style: italic;"></div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal" id="pdfModal">
         <div class="modal-body">
@@ -357,7 +426,7 @@
                                 <div class="stat-card"><h3>Puntaje Histórico Max</h3><div class="val">${max}</div></div>
                             `;
                         }
-                        document.getElementById('statsGrid').innerHTML = htmlStats;
+                        if(document.getElementById('statsGrid')) document.getElementById('statsGrid').innerHTML = htmlStats;
 
                         // Chart: Línea
                         new Chart(document.getElementById('lineChart'), {
@@ -390,14 +459,82 @@
                             options: { plugins: { legend: { position: 'bottom' } }, cutout: '70%' }
                         });
                     } else {
-                        document.getElementById('statsGrid').innerHTML = "<p style='color:#666; font-size:12px; text-align:center; width:100%;'>No hay datos para generar telemetría. Complete una sesión.</p>";
+                        if(document.getElementById('statsGrid')) document.getElementById('statsGrid').innerHTML = "<p style='color:#666; font-size:12px; text-align:center; width:100%;'>No hay datos para generar telemetría. Complete una sesión.</p>";
                     }
                 } catch (e) {
                     console.error("Error al procesar los datos de las gráficas:", e);
                 }
             }
 
-            // --- REFERENCIAS A MODALES ---
+            // --- INICIALIZAR CALENDARIO (FullCalendar) ---
+            const calendarEl = document.getElementById('calendar');
+            let calendar;
+            if (calendarEl) {
+                calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'timeGridWeek',
+                    locale: 'es',
+                    slotMinTime: '08:00:00', // 8 AM
+                    slotMaxTime: '22:00:00', // 10 PM
+                    slotDuration: '00:15:00', // Bloques de 15 min
+                    allDaySlot: false,
+                    headerToolbar: { left: 'prev,next today', center: 'title', right: 'timeGridWeek,timeGridDay' },
+                    events: '/api/bookings',
+                    eventClick: function(info) {
+                        const event = info.event;
+                        const isOwner = event.extendedProps.is_owner;
+                        const role = "{{ role }}";
+
+                        if (role === 'admin') {
+                            document.getElementById('bookingModalTitle').innerText = 'EDITAR AGENDAMIENTO';
+                            document.getElementById('bId').value = event.id;
+                            document.getElementById('bTitle').value = event.title.split(' - (')[0]; 
+                            document.getElementById('bUser').value = event.extendedProps.user_assigned;
+                            
+                            const formatLocal = (dateStr) => {
+                                const d = new Date(dateStr);
+                                const pad = (n) => n.toString().padStart(2, '0');
+                                return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                            };
+                            document.getElementById('bStart').value = formatLocal(event.startStr);
+                            document.getElementById('bEnd').value = event.endStr ? formatLocal(event.endStr) : formatLocal(event.startStr);
+                            document.getElementById('bNotes').value = event.extendedProps.description || '';
+                            document.getElementById('btnDeleteBooking').style.display = 'block';
+                            document.getElementById('bookingModal').style.display = 'flex';
+                        } else if (isOwner) {
+                            document.getElementById('infoTitle').innerText = event.title;
+                            document.getElementById('infoStart').innerText = event.start.toLocaleString();
+                            document.getElementById('infoEnd').innerText = event.end ? event.end.toLocaleString() : '';
+                            document.getElementById('infoNotes').innerText = event.extendedProps.description || 'Sin notas adicionales registradas.';
+                            document.getElementById('infoBookingModal').style.display = 'flex';
+                        } else {
+                            alert('Este bloque horario está ocupado o asignado a otra institución. No tienes permisos para ver los detalles internos.');
+                        }
+                    }
+                });
+
+                // Renderizar cuando se hace clic en la pestaña Calendario (Soluciona bug visual)
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if(e.currentTarget.innerText.includes('CALENDARIO')) {
+                            setTimeout(() => { calendar.render(); }, 150);
+                        }
+                    });
+                });
+
+                // Búsqueda Rápida en Calendario
+                const searchCalendar = document.getElementById('searchCalendar');
+                if (searchCalendar) {
+                    searchCalendar.addEventListener('input', (e) => {
+                        const val = e.target.value.toLowerCase();
+                        calendar.getEvents().forEach(evt => {
+                            const match = evt.title.toLowerCase().includes(val) || (evt.extendedProps.user_assigned || '').toLowerCase().includes(val);
+                            evt.setProp('display', match ? 'auto' : 'none');
+                        });
+                    });
+                }
+            }
+
+            // --- REFERENCIAS A MODALES Y BOTONES ---
             const regModal = document.getElementById('regModal');
             const pdfModal = document.getElementById('pdfModal');
             const editModal = document.getElementById('editModal');
@@ -417,6 +554,63 @@
             if(btnCloseReg) btnCloseReg.addEventListener('click', () => regModal.style.display = 'none');
             if(btnClosePdf) btnClosePdf.addEventListener('click', () => pdfModal.style.display = 'none');
             if(btnCloseEdit) btnCloseEdit.addEventListener('click', () => editModal.style.display = 'none');
+
+            // --- LÓGICA MODAL ADMIN AGENDAMIENTO ---
+            const btnNewEvent = document.getElementById('btnNewEvent');
+            if(btnNewEvent) {
+                btnNewEvent.addEventListener('click', () => {
+                    document.getElementById('bookingModalTitle').innerText = 'NUEVO AGENDAMIENTO';
+                    document.getElementById('bId').value = '';
+                    document.getElementById('bTitle').value = '';
+                    document.getElementById('bUser').value = '';
+                    document.getElementById('bStart').value = '';
+                    document.getElementById('bEnd').value = '';
+                    document.getElementById('bNotes').value = '';
+                    document.getElementById('btnDeleteBooking').style.display = 'none';
+                    document.getElementById('bookingModal').style.display = 'flex';
+                });
+            }
+
+            const closeBookingModal = document.getElementById('closeBookingModal');
+            if(closeBookingModal) closeBookingModal.addEventListener('click', () => document.getElementById('bookingModal').style.display = 'none');
+            
+            const closeInfoBookingModal = document.getElementById('closeInfoBookingModal');
+            if(closeInfoBookingModal) closeInfoBookingModal.addEventListener('click', () => document.getElementById('infoBookingModal').style.display = 'none');
+
+            const btnSaveBooking = document.getElementById('btnSaveBooking');
+            if(btnSaveBooking) {
+                btnSaveBooking.addEventListener('click', async () => {
+                    const data = {
+                        id: document.getElementById('bId').value,
+                        title: document.getElementById('bTitle').value,
+                        user_assigned: document.getElementById('bUser').value,
+                        start: document.getElementById('bStart').value,
+                        end: document.getElementById('bEnd').value,
+                        description: document.getElementById('bNotes').value
+                    };
+                    if(!data.title || !data.start || !data.end) return alert('El título, hora de inicio y fin son obligatorios.');
+
+                    const res = await fetch('/api/bookings', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
+                    if(res.ok) {
+                        document.getElementById('bookingModal').style.display = 'none';
+                        calendar.refetchEvents(); // Refresca sin recargar la página
+                    } else alert('Error al procesar el agendamiento.');
+                });
+            }
+
+            const btnDeleteBooking = document.getElementById('btnDeleteBooking');
+            if(btnDeleteBooking) {
+                btnDeleteBooking.addEventListener('click', async () => {
+                    if(confirm('¿Confirmas que deseas cancelar y eliminar este agendamiento de forma permanente?')) {
+                        const id = document.getElementById('bId').value;
+                        const res = await fetch('/api/bookings/' + id, { method: 'DELETE' });
+                        if(res.ok) {
+                            document.getElementById('bookingModal').style.display = 'none';
+                            calendar.refetchEvents();
+                        } else alert('Error al eliminar la cita.');
+                    }
+                });
+            }
 
             // --- CAMBIO DINÁMICO FORMULARIO REGISTRO ---
             const rRole = document.getElementById('rRole');

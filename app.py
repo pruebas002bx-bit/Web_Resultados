@@ -56,6 +56,15 @@ class ScoreRecord(db.Model):
     score = db.Column(db.Integer, nullable=False)
     timestamp = db.Column(db.String(50), nullable=False)
 
+class Booking(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    start_datetime = db.Column(db.String(50), nullable=False)
+    end_datetime = db.Column(db.String(50), nullable=False)
+    user_assigned = db.Column(db.String(100), nullable=True) # Usuario o Partner asignado
+    description = db.Column(db.Text, nullable=True)
+
+
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username="admin").first():
@@ -129,19 +138,77 @@ def dashboard():
         records = query.order_by(ScoreRecord.id.desc()).all()
         partners = User.query.filter_by(role='partner').all() 
         
-    # --- PREPARAR DATOS PARA LAS GRÁFICAS WEB ---
     chart_data = []
     for r in records:
-        chart_data.append({
-            'score': r.score,
-            'scenario': r.scenario,
-            'timestamp': r.timestamp,
-            'shooter_name': r.shooter_name
-        })
+        chart_data.append({'score': r.score, 'scenario': r.scenario, 'timestamp': r.timestamp, 'shooter_name': r.shooter_name})
+        
+    # Traemos todos los usuarios Partner y Membresías para que el admin pueda agendarles
+    users_list = User.query.filter(User.role.in_(['partner', 'membresia'])).all()
         
     return render_template('dashboard.html', records=records, role=role, 
                            username=session['username'], shooters=unique_shooters, 
-                           partners=partners, chart_data=json.dumps(chart_data))
+                           partners=partners, chart_data=json.dumps(chart_data), users_list=users_list)
+
+# --- RUTAS DEL CALENDARIO ---
+@app.route('/api/bookings', methods=['GET'])
+@login_required
+def get_bookings():
+    bookings = Booking.query.all()
+    events = []
+    current_username = session['username']
+    is_admin = session['role'] == 'admin'
+    
+    for b in bookings:
+        # Lógica de Permisos
+        if is_admin or b.user_assigned == current_username:
+            title = f"{b.title} - ({b.user_assigned})" if is_admin else b.title
+            color = "#B91C1C" # Rojo Alpha para dueños/Admin
+            is_owner = True
+        else:
+            title = "HORARIO OCUPADO O ASIGNADO"
+            color = "#9CA3AF" # Gris para otras personas
+            is_owner = False
+            
+        events.append({
+            "id": b.id, "title": title, "start": b.start_datetime, "end": b.end_datetime,
+            "backgroundColor": color, "borderColor": color,
+            "extendedProps": {
+                "user_assigned": b.user_assigned if is_admin else "",
+                "description": b.description if is_owner else "",
+                "is_owner": is_owner
+            }
+        })
+    return jsonify(events)
+
+@app.route('/api/bookings', methods=['POST'])
+@login_required
+def save_booking():
+    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
+    data = request.json
+    try:
+        if data.get('id'): # Editar existente
+            booking = Booking.query.get(data['id'])
+            booking.title = data['title']
+            booking.start_datetime = data['start']
+            booking.end_datetime = data['end']
+            booking.user_assigned = data['user_assigned']
+            booking.description = data['description']
+        else: # Crear Nuevo
+            booking = Booking(title=data['title'], start_datetime=data['start'], end_datetime=data['end'], user_assigned=data['user_assigned'], description=data['description'])
+            db.session.add(booking)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    except: return jsonify({"status": "error"}), 500
+
+@app.route('/api/bookings/<int:b_id>', methods=['DELETE'])
+@login_required
+def delete_booking(b_id):
+    if session['role'] != 'admin': return jsonify({"status": "denied"}), 403
+    booking = Booking.query.get(b_id)
+    if booking:
+        db.session.delete(booking)
+        db.session.commit()
+    return jsonify({"status": "success"})
 
 @app.route('/edit_partner', methods=['POST'])
 @login_required
