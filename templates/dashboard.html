@@ -271,19 +271,21 @@
         filters.forEach(id => document.getElementById(id)?.addEventListener('input', runFilters));
 
         function runFilters() {
-            const dFrom = document.getElementById('dateFrom').value;
+            const dFrom = document.getElementById('dateFrom').value; // Formato YYYY-MM-DD
             const dTo = document.getElementById('dateTo').value;
             const sID = document.getElementById('searchID').value.toLowerCase();
-            const sStat = document.getElementById('searchStation').value.toLowerCase();
-            const sScen = document.getElementById('searchScenario').value.toLowerCase();
 
             document.querySelectorAll('.data-row').forEach(row => {
-                const date = row.dataset.date;
-                const matchDate = (!dFrom || date >= dFrom) && (!dTo || date <= dTo);
+                // Obtenemos 18/03/2026 y lo convertimos a 2026-03-18 para comparar
+                const rawDate = row.cells[0].textContent.split(' ')[0]; // "18/03/2026"
+                const parts = rawDate.split('/');
+                const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // "2026-03-18"
+
+                const matchDate = (!dFrom || formattedDate >= dFrom) && (!dTo || formattedDate <= dTo);
                 const matchID = row.cells[3].textContent.toLowerCase().includes(sID);
-                const matchStat = row.cells[1].textContent.toLowerCase().includes(sStat);
-                const matchScen = row.cells[5].textContent.toLowerCase().includes(sScen);
-                row.style.display = (matchDate && matchID && matchStat && matchScen) ? '' : 'none';
+                const matchStat = row.cells[1].textContent.toLowerCase().includes(document.getElementById('searchStation').value.toLowerCase());
+
+                row.style.display = (matchDate && matchID && matchStat) ? '' : 'none';
             });
         }
 
