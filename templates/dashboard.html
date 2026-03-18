@@ -326,6 +326,124 @@
         </div>
         {% endif %}
 
+    </div> <div class="modal" id="regModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" id="closeRegModal"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px;">NUEVO REGISTRO</h2>
+            <div class="input-group">
+                <label>Tipo de Perfil</label>
+                <select id="rRole" class="input-ctrl">
+                    <option value="partner">Partner / Escuela</option>
+                    <option value="membresia">Membresía Individual</option>
+                </select>
+            </div>
+            <div class="input-group"><label>Usuario</label><input type="text" id="rUser" class="input-ctrl"></div>
+            <div class="input-group"><label>Contraseña</label><input type="password" id="rPass" class="input-ctrl"></div>
+            
+            <div id="p-fields">
+                <div class="input-group"><label>Ubicación</label><input type="text" id="rLoc" class="input-ctrl"></div>
+                <div class="input-group"><label>Grupo</label><input type="text" id="rGrp" class="input-ctrl"></div>
+                <div class="input-group">
+                    <label>Logo de Escuela (Opcional)</label>
+                    <input type="file" id="rLogo" class="input-ctrl" accept="image/*" style="padding: 10px;">
+                </div>
+            </div>
+            <div id="m-fields" style="display: none;">
+                <div class="input-group"><label>Sucursal</label><input type="text" id="rSuc" class="input-ctrl"></div>
+                <div class="input-group"><label>ID Tirador</label><input type="text" id="rIdDoc" class="input-ctrl"></div>
+            </div>
+            <button class="btn-action" id="btnSaveUser">Finalizar Registro</button>
+        </div>
+    </div>
+
+    {% if role == 'admin' %}
+    <div class="modal" id="editModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" id="closeEditModal"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px;">EDITAR PARTNER</h2>
+            <div class="input-group">
+                <label>Seleccionar Escuela / Partner</label>
+                <select id="eUserId" class="input-ctrl">
+                    <option value="">-- Seleccione para editar --</option>
+                    {% for p in partners %}
+                    <option value="{{ p.id }}">{{ p.username }} (Grupo: {{ p.group_name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-bottom: 15px;">* Deja en blanco los campos que NO deseas cambiar.</p>
+            <div class="input-group"><label>Nueva Contraseña</label><input type="password" id="ePass" class="input-ctrl"></div>
+            <div class="input-group"><label>Nueva Ubicación</label><input type="text" id="eLoc" class="input-ctrl"></div>
+            <div class="input-group"><label>Nuevo Nombre de Grupo</label><input type="text" id="eGrp" class="input-ctrl"></div>
+            <div class="input-group">
+                <label>Nuevo Logo (Reemplazar)</label>
+                <input type="file" id="eLogo" class="input-ctrl" accept="image/*" style="padding: 10px;">
+            </div>
+            <button class="btn-action" id="btnUpdatePartner">Actualizar Datos</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="bookingModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" id="closeBookingModal"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px;" id="bookingModalTitle">NUEVA CITA / AGENDAMIENTO</h2>
+            <input type="hidden" id="bId">
+            <div class="input-group"><label>Título o Nombre del Evento</label><input type="text" id="bTitle" class="input-ctrl"></div>
+            <div class="input-group">
+                <label>Asignar a Escuela / Membresía</label>
+                <select id="bUser" class="input-ctrl">
+                    <option value="">-- Seleccione Usuario Registrado --</option>
+                    {% for u in users_list %}
+                    <option value="{{ u.username }}">{{ u.username | upper }} (Perfil: {{ u.role | upper }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-group"><label>Inicio (Día y Hora)</label><input type="datetime-local" id="bStart" class="input-ctrl"></div>
+            <div class="input-group"><label>Fin (Día y Hora)</label><input type="datetime-local" id="bEnd" class="input-ctrl"></div>
+            <div class="input-group"><label>Notas / Requerimientos</label><input type="text" id="bNotes" class="input-ctrl"></div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-action" id="btnSaveBooking" style="flex: 1;">GUARDAR CITA</button>
+                <button class="btn-action" id="btnDeleteBooking" style="background: #ef4444; display: none; padding: 10px;">ELIMINAR</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="modal" id="infoBookingModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" id="closeInfoBookingModal"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px; color: var(--primary); text-align: center;">DETALLE DE CITA</h2>
+            <div style="font-size: 14px; line-height: 1.8; color: #374151;">
+                <p><strong>ACTIVIDAD:</strong> <span id="infoTitle" style="font-weight: 700; color: #000;"></span></p>
+                <p><strong>INICIO:</strong> <span id="infoStart"></span></p>
+                <p><strong>FIN:</strong> <span id="infoEnd"></span></p>
+                <p style="margin-top: 15px;"><strong>NOTAS ASIGNADAS:</strong></p>
+                <div id="infoNotes" style="background: #F9FAFB; padding: 15px; border-radius: 8px; border: 1px solid #E5E7EB; font-style: italic;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="pdfModal">
+        <div class="modal-body">
+            <i data-lucide="x" class="close-btn" id="closePdfModal"></i>
+            <h2 style="font-weight: 900; margin-bottom: 20px;">GENERAR REPORTE PDF</h2>
+            <div class="input-group">
+                <label>Seleccionar Tirador (ID)</label>
+                <select id="pdfShooter" class="input-ctrl">
+                    <option value="">-- Seleccione --</option>
+                    {% for s in shooters %}
+                    <option value="{{ s.shooter_id }}">{{ s.shooter_id }} - {{ s.shooter_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-group"><label>Desde Fecha</label><input type="date" id="pdfFrom" class="input-ctrl"></div>
+            <div class="input-group"><label>Hasta Fecha</label><input type="date" id="pdfTo" class="input-ctrl"></div>
+            <button class="btn-action" id="btnDownloadPdf">GENERAR DOCUMENTO</button>
+        </div>
+    </div>
+
+    {% endif %}
+
     </div>
 
     <div class="modal" id="regModal">
