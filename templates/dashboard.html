@@ -2,26 +2,28 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ALPHA CLOUD - Tactical Dashboard</title>
+    
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    
     <style>
         :root { --primary: #B91C1C; --dark: #000000; --glass: rgba(255, 255, 255, 0.95); }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; }
         
-        body { background-color: #FFFFFF; color: var(--dark); min-height: 100vh; }
+        body { background-color: #F9FAFB; color: var(--dark); min-height: 100vh; overflow-x: hidden; }
 
         /* --- VISTA LOGIN --- */
         .login-overlay { 
             height: 100vh; display: flex; align-items: center; justify-content: center;
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
                         url('https://i.ibb.co/MkwvwMgp/Fondo.png') no-repeat center center fixed; 
-            background-size: cover;
+            background-size: cover; padding: 15px;
         }
         .login-card { 
-            background: var(--glass); padding: 40px; border-radius: 20px; width: 100%; max-width: 420px; 
+            background: var(--glass); padding: 40px 30px; border-radius: 20px; width: 100%; max-width: 420px; 
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border-top: 6px solid var(--primary);
         }
         .login-card img { width: 120px; margin-bottom: 20px; }
@@ -30,27 +32,27 @@
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; font-size: 11px; font-weight: 800; color: #555; margin-bottom: 5px; text-transform: uppercase; }
         .input-ctrl { 
-            width: 100%; padding: 14px; border: 2px solid #EEE; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none; transition: 0.3s;
+            width: 100%; padding: 14px; border: 2px solid #E5E7EB; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none; transition: 0.3s; background: white;
         }
-        .input-ctrl:focus { border-color: var(--primary); }
+        .input-ctrl:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1); }
         
         .btn-action { 
             width: 100%; padding: 16px; background: var(--dark); color: white; border: none; border-radius: 10px; 
             font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
         }
-        .btn-action:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-action:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
 
-        /* --- DASHBOARD NAVBAR --- */
+        /* --- NAVBAR RESPONSIVE --- */
         .navbar { 
-            background: white; padding: 15px 50px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 3px solid var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px solid var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 15px;
         }
-        .nav-logo { height: 45px; }
-        .nav-btns { display: flex; gap: 12px; align-items: center; }
+        .nav-logo { height: 40px; }
+        .nav-btns { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         
         .btn-nav { 
-            color: white; border: none; padding: 10px 18px; border-radius: 8px; 
-            font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+            color: white; border: none; padding: 10px 15px; border-radius: 8px; font-size: 13px;
+            font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
         }
         .btn-reg { background: var(--primary); }
         .btn-pdf { background: var(--dark); }
@@ -58,60 +60,86 @@
         .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
 
         /* --- MAIN CONTENT & TABS --- */
-        .main-content { max-width: 1500px; margin: 30px auto; padding: 0 30px; }
+        .main-content { max-width: 1500px; margin: 30px auto; padding: 0 20px; }
         
-        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #EEE; padding-bottom: 10px; }
-        .tab-btn { background: none; border: none; padding: 10px 20px; font-weight: 800; font-size: 14px; cursor: pointer; color: #666; transition: 0.3s; border-radius: 8px; }
-        .tab-btn.active { background: var(--primary); color: white; }
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 2px solid #E5E7EB; padding-bottom: 10px; overflow-x: auto; white-space: nowrap; }
+        .tab-btn { background: none; border: none; padding: 12px 20px; font-weight: 800; font-size: 13px; cursor: pointer; color: #6B7280; transition: 0.3s; border-radius: 8px; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(185, 28, 28, 0.2); }
         .tab-btn:hover:not(.active) { background: #F3F4F6; }
-        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
         .tab-content.active { display: block; }
         
         /* --- ESTADÍSTICAS Y GRÁFICAS --- */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 20px; border-radius: 15px; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid var(--primary); }
-        .stat-card h3 { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 10px; font-weight: 900;}
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 25px 20px; border-radius: 15px; border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid var(--primary); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card h3 { font-size: 11px; color: #6B7280; text-transform: uppercase; margin-bottom: 10px; font-weight: 900; letter-spacing: 0.5px;}
         .stat-card .val { font-size: 32px; font-weight: 900; color: var(--dark); }
         
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .chart-box { background: white; padding: 20px; border-radius: 15px; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .chart-box { background: white; padding: 25px; border-radius: 15px; border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- FILTROS Y TABLA --- */
+        /* --- FILTROS Y TABLA RESPONSIVE --- */
         .tactical-filters {
-            background: #F9FAFB; padding: 25px; border-radius: 15px; margin-bottom: 20px;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;
-            border: 1px solid #EEE;
+            background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end;
+            border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
-        .filter-box label { font-size: 10px; font-weight: 900; color: var(--primary); margin-bottom: 5px; display: block; text-transform: uppercase; }
+        .filter-box label { font-size: 10px; font-weight: 900; color: var(--primary); margin-bottom: 6px; display: block; text-transform: uppercase; }
 
-        .sort-btns { display: flex; gap: 8px; margin-bottom: 15px; }
-        .btn-sort { background: white; border: 1px solid #DDD; padding: 8px 15px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 800; transition: 0.2s; }
-        .btn-sort:hover { background: #F3F4F6; }
+        .sort-btns { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .btn-sort { background: white; border: 1px solid #D1D5DB; padding: 8px 15px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 800; transition: 0.2s; color: #374151; }
+        .btn-sort:hover { background: #F3F4F6; border-color: #9CA3AF; }
 
-        .table-wrap { background: white; border-radius: 15px; overflow: hidden; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: var(--dark); color: white; padding: 18px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
-        td { padding: 18px; text-align: center; font-weight: 700; border-bottom: 1px solid #EEE; font-size: 14px; color: #000; }
+        /* Tabla adaptada a móviles */
+        .table-wrap { background: white; border-radius: 15px; overflow-x: auto; border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; /* Fuerza scroll si es pequeño */ }
+        th { background: var(--dark); color: white; padding: 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+        td { padding: 16px; text-align: center; font-weight: 700; border-bottom: 1px solid #E5E7EB; font-size: 13px; color: #111827; }
         tr:hover { background: #F9FAFB; }
         
-        .badge-score { background: var(--primary); color: white; padding: 6px 14px; border-radius: 6px; font-size: 16px; font-weight: 900; }
+        .badge-score { background: var(--primary); color: white; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 900; box-shadow: 0 2px 4px rgba(185, 28, 28, 0.2); }
         .badge-group { background: #E5E7EB; color: #374151; padding: 4px 10px; border-radius: 20px; font-size: 11px; }
 
-        /* --- MODALS --- */
-        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: none; align-items:center; justify-content:center; z-index: 1000; }
-        .modal-body { background: white; width: 450px; border-radius: 20px; padding: 40px; position: relative; border-top: 6px solid var(--primary); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        .close-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #999; transition: 0.2s; }
-        .close-btn:hover { color: var(--primary); }
+        /* --- MODALS RESPONSIVE --- */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display: none; align-items:center; justify-content:center; z-index: 9999; backdrop-filter: blur(4px); padding: 15px; }
+        .modal-body { background: white; width: 100%; max-width: 450px; border-radius: 20px; padding: 35px 25px; position: relative; border-top: 6px solid var(--primary); box-shadow: 0 25px 50px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        .close-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #9CA3AF; transition: 0.2s; }
+        .close-btn:hover { color: var(--primary); transform: scale(1.1); }
 
-        /* --- CALENDARIO FULLCALENDAR --- */
-        .fc { background: white; padding: 25px; border-radius: 15px; border: 1px solid #EEE; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .fc-event { cursor: pointer; border-radius: 4px; border: none; padding: 2px; }
-        .fc-timegrid-slot { height: 2.5em !important; } /* Tamaño para bloques de 15 min */
-        .fc-toolbar-title { font-weight: 900 !important; font-size: 1.2em !important; text-transform: uppercase; }
-        .fc-button-primary { background-color: var(--dark) !important; border-color: var(--dark) !important; text-transform: uppercase; font-weight: bold !important; }
-        .fc-button-active { background-color: var(--primary) !important; border-color: var(--primary) !important; }
+        /* --- CALENDARIO FULLCALENDAR (MODERNO & RESPONSIVE) --- */
+        #tab-calendar { animation: fadeIn 0.4s ease; }
+        .fc { background: white; padding: 20px; border-radius: 15px; border: 1px solid #E5E7EB; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); font-family: 'Inter', sans-serif; }
+        .fc-theme-standard th { border-color: #F3F4F6; padding: 12px 0; background: #F9FAFB; text-transform: uppercase; font-size: 11px; color: #6B7280; font-weight: 800; }
+        .fc-theme-standard td, .fc-theme-standard .fc-scrollgrid { border-color: #F3F4F6; }
+        .fc-day-today { background-color: rgba(185, 28, 28, 0.02) !important; }
+        .fc-event { cursor: pointer; border-radius: 6px; border: none; padding: 3px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s ease; font-size: 11px; border-left: 4px solid rgba(0,0,0,0.2) !important; }
+        .fc-event:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); z-index: 5 !important; filter: brightness(1.1); }
+        .fc-timegrid-slot { height: 3em !important; }
+        .fc-toolbar-title { font-weight: 900 !important; font-size: 1.5em !important; color: var(--dark); letter-spacing: -0.5px; text-align: center; }
+        .fc-button-primary { background-color: white !important; color: #374151 !important; border: 1px solid #D1D5DB !important; text-transform: capitalize; font-weight: 700 !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: 0.2s; border-radius: 8px !important; margin: 0 2px !important; }
+        .fc-button-primary:hover { background-color: #F9FAFB !important; border-color: #9CA3AF !important; }
+        .fc-button-active { background-color: var(--dark) !important; color: white !important; border-color: var(--dark) !important; }
+        .fc-timegrid-now-indicator-line { border-color: var(--primary) !important; border-width: 2px !important; }
+        .fc-timegrid-now-indicator-arrow { border-color: var(--primary) !important; border-width: 6px !important; }
+        .fc-timegrid-col-frame { padding-right: 2px; }
+
+        /* --- MEDIA QUERIES (AJUSTES PARA CELULARES) --- */
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; text-align: center; }
+            .nav-btns { justify-content: center; width: 100%; }
+            .tabs-nav { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 5px; }
+            .tab-btn { flex: 0 0 auto; font-size: 12px; padding: 10px 15px; }
+            .tactical-filters { grid-template-columns: 1fr; }
+            
+            /* Calendario Móvil */
+            .fc-toolbar { flex-direction: column; gap: 15px; }
+            .fc { padding: 10px; }
+            .fc-toolbar-title { font-size: 1.2em !important; }
+            .fc-header-toolbar .fc-toolbar-chunk { display: flex; justify-content: center; width: 100%; flex-wrap: wrap; gap: 5px; }
+        }
     </style>
 </head>
 <body>
@@ -192,11 +220,11 @@
                 </div>
             <div class="charts-grid">
                 <div class="chart-box">
-                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#666; font-weight:800;">CURVA DE RENDIMIENTO (ÚLTIMAS SESIONES)</h3>
+                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">CURVA DE RENDIMIENTO (ÚLTIMAS SESIONES)</h3>
                     <canvas id="lineChart"></canvas>
                 </div>
                 <div class="chart-box">
-                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#666; font-weight:800;">TASA DE ESCENARIOS EJECUTADOS</h3>
+                    <h3 style="font-size: 12px; margin-bottom: 15px; text-align: center; color:#6B7280; font-weight:800;">TASA DE ESCENARIOS EJECUTADOS</h3>
                     <canvas id="doughnutChart"></canvas>
                 </div>
             </div>
@@ -262,7 +290,6 @@
             </div>
             <div id="calendar"></div>
         </div>
-
     </div>
 
     <div class="modal" id="regModal">
@@ -351,13 +378,13 @@
     <div class="modal" id="infoBookingModal">
         <div class="modal-body">
             <i data-lucide="x" class="close-btn" id="closeInfoBookingModal"></i>
-            <h2 style="font-weight: 900; margin-bottom: 20px; color: var(--primary);">DETALLE DEL AGENDAMIENTO</h2>
-            <div style="font-size: 14px; line-height: 1.8;">
-                <p><strong>ACTIVIDAD:</strong> <span id="infoTitle" style="font-weight: 700;"></span></p>
+            <h2 style="font-weight: 900; margin-bottom: 20px; color: var(--primary); text-align: center;">DETALLE DE CITA</h2>
+            <div style="font-size: 14px; line-height: 1.8; color: #374151;">
+                <p><strong>ACTIVIDAD:</strong> <span id="infoTitle" style="font-weight: 700; color: #000;"></span></p>
                 <p><strong>INICIO:</strong> <span id="infoStart"></span></p>
                 <p><strong>FIN:</strong> <span id="infoEnd"></span></p>
                 <p style="margin-top: 15px;"><strong>NOTAS ASIGNADAS:</strong></p>
-                <div id="infoNotes" style="background: #F9FAFB; padding: 15px; border-radius: 8px; border: 1px solid #EEE; font-style: italic;"></div>
+                <div id="infoNotes" style="background: #F9FAFB; padding: 15px; border-radius: 8px; border: 1px solid #E5E7EB; font-style: italic;"></div>
             </div>
         </div>
     </div>
@@ -393,9 +420,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar Iconos
             lucide.createIcons();
 
-            // --- LÓGICA DE GRÁFICAS Y DASHBOARD ---
+            // ================== LÓGICA DE GRÁFICAS Y DASHBOARD ==================
             const rawData = `{{ chart_data | safe }}`;
             if (rawData && rawData !== 'undefined' && rawData !== '' && document.getElementById('lineChart')) {
                 try {
@@ -459,26 +487,40 @@
                             options: { plugins: { legend: { position: 'bottom' } }, cutout: '70%' }
                         });
                     } else {
-                        if(document.getElementById('statsGrid')) document.getElementById('statsGrid').innerHTML = "<p style='color:#666; font-size:12px; text-align:center; width:100%;'>No hay datos para generar telemetría. Complete una sesión.</p>";
+                        if(document.getElementById('statsGrid')) document.getElementById('statsGrid').innerHTML = "<p style='color:#6B7280; font-size:13px; text-align:center; width:100%; padding:20px;'>No hay datos para generar telemetría. Realiza una sesión en el simulador para visualizar los gráficos.</p>";
                     }
                 } catch (e) {
-                    console.error("Error al procesar los datos de las gráficas:", e);
+                    console.error("Error al procesar gráficas:", e);
                 }
             }
 
-            // --- INICIALIZAR CALENDARIO (FullCalendar) ---
+            // ================== INICIALIZAR CALENDARIO (FULLCALENDAR) ==================
             const calendarEl = document.getElementById('calendar');
             let calendar;
             if (calendarEl) {
                 calendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'timeGridWeek',
+                    initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek', // Modo responsivo automático
                     locale: 'es',
                     slotMinTime: '08:00:00', // 8 AM
                     slotMaxTime: '22:00:00', // 10 PM
                     slotDuration: '00:15:00', // Bloques de 15 min
+                    slotLabelFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' },
                     allDaySlot: false,
-                    headerToolbar: { left: 'prev,next today', center: 'title', right: 'timeGridWeek,timeGridDay' },
+                    nowIndicator: true, // Línea de tiempo real
+                    navLinks: true,
+                    expandRows: true,
+                    stickyHeaderDates: true,
+                    headerToolbar: { 
+                        left: 'prev,next today', 
+                        center: 'title', 
+                        right: 'timeGridWeek,timeGridDay,listWeek' 
+                    },
+                    buttonText: { today: 'Hoy', week: 'Semana', day: 'Día', list: 'Agenda' },
                     events: '/api/bookings',
+                    windowResize: function(arg) {
+                        if (window.innerWidth < 768) { calendar.changeView('timeGridDay'); } 
+                        else { calendar.changeView('timeGridWeek'); }
+                    },
                     eventClick: function(info) {
                         const event = info.event;
                         const isOwner = event.extendedProps.is_owner;
@@ -512,7 +554,7 @@
                     }
                 });
 
-                // Renderizar cuando se hace clic en la pestaña Calendario (Soluciona bug visual)
+                // Renderizar cuando se hace clic en la pestaña Calendario (Soluciona bug visual de librerías)
                 document.querySelectorAll('.tab-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         if(e.currentTarget.innerText.includes('CALENDARIO')) {
@@ -534,7 +576,7 @@
                 }
             }
 
-            // --- REFERENCIAS A MODALES Y BOTONES ---
+            // ================== REFERENCIAS A MODALES Y BOTONES ==================
             const regModal = document.getElementById('regModal');
             const pdfModal = document.getElementById('pdfModal');
             const editModal = document.getElementById('editModal');
@@ -547,6 +589,7 @@
             const btnClosePdf = document.getElementById('closePdfModal');
             const btnCloseEdit = document.getElementById('closeEditModal');
             
+            // Toggle Modals
             if(btnOpenReg) btnOpenReg.addEventListener('click', () => regModal.style.display = 'flex');
             if(btnOpenPdf) btnOpenPdf.addEventListener('click', () => pdfModal.style.display = 'flex');
             if(btnOpenEdit) btnOpenEdit.addEventListener('click', () => editModal.style.display = 'flex');
@@ -555,7 +598,18 @@
             if(btnClosePdf) btnClosePdf.addEventListener('click', () => pdfModal.style.display = 'none');
             if(btnCloseEdit) btnCloseEdit.addEventListener('click', () => editModal.style.display = 'none');
 
-            // --- LÓGICA MODAL ADMIN AGENDAMIENTO ---
+            // Cierre haciendo clic fuera del modal
+            window.onclick = function(event) {
+                if (event.target == regModal) regModal.style.display = "none";
+                if (event.target == pdfModal) pdfModal.style.display = "none";
+                if (event.target == editModal) editModal.style.display = "none";
+                const bModal = document.getElementById('bookingModal');
+                if (bModal && event.target == bModal) bModal.style.display = "none";
+                const iModal = document.getElementById('infoBookingModal');
+                if (iModal && event.target == iModal) iModal.style.display = "none";
+            }
+
+            // ================== LÓGICA MODAL ADMIN AGENDAMIENTO ==================
             const btnNewEvent = document.getElementById('btnNewEvent');
             if(btnNewEvent) {
                 btnNewEvent.addEventListener('click', () => {
@@ -593,7 +647,7 @@
                     const res = await fetch('/api/bookings', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
                     if(res.ok) {
                         document.getElementById('bookingModal').style.display = 'none';
-                        calendar.refetchEvents(); // Refresca sin recargar la página
+                        calendar.refetchEvents();
                     } else alert('Error al procesar el agendamiento.');
                 });
             }
@@ -612,7 +666,7 @@
                 });
             }
 
-            // --- CAMBIO DINÁMICO FORMULARIO REGISTRO ---
+            // ================== REGISTRO DE USUARIO Y UPLOAD IMGBB ==================
             const rRole = document.getElementById('rRole');
             if(rRole) {
                 rRole.addEventListener('change', (e) => {
@@ -622,7 +676,6 @@
                 });
             }
 
-            // --- GUARDAR USUARIO NUEVO ---
             const btnSaveUser = document.getElementById('btnSaveUser');
             if(btnSaveUser) {
                 btnSaveUser.addEventListener('click', async () => {
@@ -638,6 +691,7 @@
                         const formData = new FormData();
                         formData.append('image', logoFile);
                         try {
+                            // Subida a la API de ImgBB
                             const imgbbRes = await fetch('https://api.imgbb.com/1/upload?key=df01bb05ce03159d54c33e1e22eba2cf', {
                                 method: 'POST', body: formData
                             });
@@ -676,7 +730,7 @@
                 });
             }
 
-            // --- EDITAR PARTNER ---
+            // ================== EDITAR PARTNER Y UPLOAD IMGBB ==================
             const btnUpdatePartner = document.getElementById('btnUpdatePartner');
             if(btnUpdatePartner) {
                 btnUpdatePartner.addEventListener('click', async () => {
@@ -730,19 +784,21 @@
                 });
             }
 
-            // --- DESCARGAR PDF ---
+            // ================== DESCARGAR PDF ==================
             const btnDownloadPdf = document.getElementById('btnDownloadPdf');
             if(btnDownloadPdf) {
                 btnDownloadPdf.addEventListener('click', () => {
                     const id = document.getElementById('pdfShooter').value;
                     const from = document.getElementById('pdfFrom').value;
                     const to = document.getElementById('pdfTo').value;
-                    if(!id) return alert("Seleccione un tirador");
+                    if(!id) return alert("Seleccione un tirador de la lista.");
+                    
+                    // Abrir en la misma pestaña forzando descarga
                     window.location.href = `/generate_pdf?id=${id}&from=${from}&to=${to}`;
                 });
             }
 
-            // --- MOTOR DE FILTROS PARA TABLA ---
+            // ================== MOTOR DE FILTROS PARA TABLA ==================
             const filterIds = ['dateFrom', 'dateTo', 'searchID', 'searchStation', 'searchScenario'];
             filterIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -759,7 +815,7 @@
                 document.querySelectorAll('.data-row').forEach(row => {
                     const rawDate = row.cells[0].textContent.trim().split(' ')[0]; 
                     const parts = rawDate.split('/');
-                    const tableDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // Convertir a YYYY-MM-DD
+                    const tableDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // DD/MM/YYYY a YYYY-MM-DD
 
                     const matchDate = (!dFrom || tableDate >= dFrom) && (!dTo || tableDate <= dTo);
                     const matchID = row.cells[3].textContent.trim().toLowerCase().includes(sID);
@@ -778,7 +834,7 @@
                 });
             }
 
-            // --- ORDENAMIENTO DE TABLA ---
+            // ================== ORDENAMIENTO DE TABLA ==================
             function sortTable(asc) {
                 const body = document.getElementById('tableBody');
                 const rows = Array.from(body.querySelectorAll('.data-row'));
