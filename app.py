@@ -1,12 +1,11 @@
 import os
 import ssl
 import io
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, make_response
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
 from functools import wraps
-from io import BytesIO
 from sqlalchemy import func
 from fpdf import FPDF
 
