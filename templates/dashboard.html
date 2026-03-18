@@ -13,51 +13,61 @@
         :root { --primary: #B91C1C; --dark: #000000; --glass: rgba(255, 255, 255, 0.95); }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; }
         
-        body { background-color: #F9FAFB; color: var(--dark); min-height: 100vh; overflow-x: hidden; }
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow-x: hidden; 
+        }
 
-        /* --- VISTA LOGIN Y PUBLICIDAD INMERSIVA (100VH) --- */
         .login-container { 
             height: 100vh; 
             width: 100vw; 
             display: flex; 
-            justify-content: space-between; 
-            align-items: stretch; 
-            overflow: hidden;
+            align-items: center; 
+            justify-content: center;
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
                         url('https://i.ibb.co/MkwvwMgp/Fondo.png') no-repeat center center fixed; 
-            background-size: cover; 
-            margin: 0; 
-            padding: 0; /* Eliminado padding lateral */
-            gap: 0;     /* Eliminado espacio entre banners y centro */
+            background-size: cover;
+            position: relative; /* Base para posicionar los ads */
+            margin: 0;
+            padding: 0;
         }
 
         .login-ad {
-            flex: 0 0 18%; /* Ajustado ligeramente el ancho */
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 18%; /* Ancho proporcional */
             max-width: 300px;
-            min-width: 150px;
             height: 100vh;
-            background: transparent; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            margin: 0; /* Asegura que no haya margen */
+            z-index: 5;
+        }
+
+        /* Pegar a la izquierda total */
+        .login-ad:first-of-type {
+            left: 0;
+        }
+
+        /* Pegar a la derecha total */
+        .login-ad:last-of-type {
+            right: 0;
         }
         
         .login-ad img {
             width: 100%;
             height: 100%;
-            object-fit: contain; 
-            /* Se eliminó el drop-shadow para evitar que el resplandor cree una separación visual del borde */
+            object-fit: fill; /* Cambiado a fill para que toque los bordes de arriba a abajo exactamente */
         }
 
         .login-center {
-            flex: 1; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 20px; 
+            position: relative;
             z-index: 10;
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            justify-content: center;
         }
         
         .login-card { 
