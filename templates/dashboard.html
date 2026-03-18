@@ -59,12 +59,13 @@
         .btn-edit { background: #4B5563; }
         .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
 
-        /* --- LAYOUT CON PUBLICIDAD --- */
-        .layout-wrapper { display: flex; justify-content: center; gap: 20px; padding: 0; max-width: 1900px; margin: 0 auto; }
-        .ad-sidebar { width: 160px; min-width: 160px; height: 600px; position: sticky; top: 20px; border-radius: 10px; background: transparent; }
-        .ad-sidebar img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); }
+        /* --- LAYOUT CON PUBLICIDAD (BLINDADO) --- */
+        .layout-wrapper { display: flex; justify-content: center; gap: 20px; padding: 0 15px; max-width: 1900px; margin: 0 auto; }
+        .ad-sidebar { width: 160px; min-width: 160px; height: 600px; position: sticky; top: 20px; border-radius: 12px; background: #E5E7EB; border: 2px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        .ad-sidebar img { width: 100%; height: 100%; object-fit: cover; border: none; background: white; }
+        .ad-placeholder { color: #6B7280; font-size: 11px; font-weight: 900; text-align: center; padding: 15px; text-transform: uppercase; letter-spacing: 1px; }
 
-        .main-content { flex: 1; max-width: 1400px; margin: 30px 0; padding: 0 10px; min-width: 0; }
+        .main-content { flex: 1; max-width: 1400px; margin: 30px 0; padding: 0; min-width: 0; }
         
         /* --- TABS --- */
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 2px solid #E5E7EB; padding-bottom: 10px; overflow-x: auto; white-space: nowrap; }
@@ -123,7 +124,9 @@
         .fc-timegrid-now-indicator-arrow { border-color: var(--primary) !important; border-width: 6px !important; }
 
         /* --- MEDIA QUERIES --- */
-        @media (max-width: 1050px) { .ad-sidebar { display: none; } }
+        @media (max-width: 900px) { 
+            .ad-sidebar { display: none !important; } 
+        }
         @media (max-width: 768px) {
             .navbar { flex-direction: column; text-align: center; }
             .nav-btns { justify-content: center; width: 100%; }
@@ -138,6 +141,10 @@
     </style>
 </head>
 <body>
+
+    {% set banner_left = ads.get('banner_left', '') if ads else '' %}
+    {% set banner_right = ads.get('banner_right', '') if ads else '' %}
+    {% set banner_modal = ads.get('modal', '') if ads else '' %}
 
     {% if login_view %}
     <div class="login-overlay">
@@ -197,7 +204,12 @@
     <div class="layout-wrapper">
         
         <aside class="ad-sidebar">
-            {% if ads and ads.banner_left %}<img src="{{ ads.banner_left }}">{% endif %}
+            {% if banner_left %}
+                <img src="{{ banner_left }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="ad-placeholder" style="display:none;">PUBLICIDAD<br>IZQUIERDA<br>160x600<br><br><span style="color:#ef4444; font-size:10px;">Enlace Roto</span></div>
+            {% else %}
+                <div class="ad-placeholder">PUBLICIDAD<br>IZQUIERDA<br>160x600</div>
+            {% endif %}
         </aside>
 
         <div class="main-content">
@@ -336,22 +348,22 @@
             <div id="tab-ads" class="tab-content">
                 <div class="tactical-filters" style="max-width: 800px; margin: 40px auto; display: block;">
                     <h2 style="font-weight: 900; margin-bottom: 10px; text-align: center;">GESTIÓN DE PUBLICIDAD</h2>
-                    <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px; text-align: center;">Añade enlaces directos a imágenes para actualizar los banners laterales y la ventana de bienvenida.</p>
+                    <p style="font-size: 12px; color: #6B7280; margin-bottom: 20px; text-align: center;">Añade enlaces directos a imágenes para actualizar los banners laterales y la ventana de bienvenida. <strong style="color: var(--primary);">Deben terminar en .png o .jpg</strong></p>
                     
                     <div style="margin-top:20px; display: grid; gap: 20px;">
                         <div class="input-group">
-                            <label>Banner Izquierdo (Recomendado 160x600 URL)</label>
-                            <input type="text" id="url-left" class="input-ctrl" value="{% if ads %}{{ ads.banner_left }}{% endif %}">
+                            <label>Banner Izquierdo (Recomendado 160x600 URL Directa)</label>
+                            <input type="text" id="url-left" class="input-ctrl" value="{{ banner_left }}">
                             <button onclick="saveAd('banner_left', 'url-left')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Izquierdo</button>
                         </div>
                         <div class="input-group">
-                            <label>Banner Derecho (Recomendado 160x600 URL)</label>
-                            <input type="text" id="url-right" class="input-ctrl" value="{% if ads %}{{ ads.banner_right }}{% endif %}">
+                            <label>Banner Derecho (Recomendado 160x600 URL Directa)</label>
+                            <input type="text" id="url-right" class="input-ctrl" value="{{ banner_right }}">
                             <button onclick="saveAd('banner_right', 'url-right')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Banner Derecho</button>
                         </div>
                         <div class="input-group">
-                            <label>Modal Popup de Bienvenida (URL)</label>
-                            <input type="text" id="url-modal" class="input-ctrl" value="{% if ads %}{{ ads.modal }}{% endif %}">
+                            <label>Modal Popup de Bienvenida (URL Directa)</label>
+                            <input type="text" id="url-modal" class="input-ctrl" value="{{ banner_modal }}">
                             <button onclick="saveAd('modal', 'url-modal')" class="btn-action" style="margin-top:10px; padding: 10px; font-size: 12px;">Actualizar Modal Popup</button>
                         </div>
                     </div>
@@ -362,16 +374,21 @@
         </div>
 
         <aside class="ad-sidebar">
-            {% if ads and ads.banner_right %}<img src="{{ ads.banner_right }}">{% endif %}
+            {% if banner_right %}
+                <img src="{{ banner_right }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="ad-placeholder" style="display:none;">PUBLICIDAD<br>DERECHA<br>160x600<br><br><span style="color:#ef4444; font-size:10px;">Enlace Roto</span></div>
+            {% else %}
+                <div class="ad-placeholder">PUBLICIDAD<br>DERECHA<br>160x600</div>
+            {% endif %}
         </aside>
 
     </div>
 
-    {% if ads and ads.modal %}
-    <div id="adWelcomeModal" class="modal" style="display: flex; z-index: 99999;">
-        <div class="modal-body" style="max-width: 500px; padding: 10px; border-top: none; background: transparent; box-shadow: none;">
-            <i data-lucide="x" class="close-btn" id="closeAdModal" style="background: white; border-radius: 50%; padding: 6px; top: 0; right: 0; z-index: 10; opacity: 1; color: black; box-shadow: 0 4px 6px rgba(0,0,0,0.3);"></i>
-            <img src="{{ ads.modal }}" style="width: 100%; border-radius: 10px; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+    {% if banner_modal %}
+    <div id="adWelcomeModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="position: relative; max-width: 500px; width: 90%; background: transparent; padding: 0;">
+            <button id="closeAdModal" style="position: absolute; top: -15px; right: -15px; background: var(--primary); color: white; border: 2px solid white; border-radius: 50%; width: 35px; height: 35px; font-weight: bold; cursor: pointer; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">X</button>
+            <img src="{{ banner_modal }}" style="width: 100%; height: auto; border-radius: 15px; box-shadow: 0 25px 50px rgba(0,0,0,0.5);" onerror="this.src='https://via.placeholder.com/500x500?text=Enlace+Modal+Invalido'">
         </div>
     </div>
     {% endif %}
@@ -523,9 +540,13 @@
             // Inicializar Iconos
             lucide.createIcons();
 
-            // Cierre Modal de Publicidad
-            const adClose = document.getElementById('closeAdModal');
-            if(adClose) adClose.onclick = () => document.getElementById('adWelcomeModal').style.display = 'none';
+            // Cierre Modal de Publicidad Principal
+            const adCloseBtn = document.getElementById('closeAdModal');
+            if(adCloseBtn) {
+                adCloseBtn.addEventListener('click', () => {
+                    document.getElementById('adWelcomeModal').style.display = 'none';
+                });
+            }
 
             // Descarga de Excel
             const btnDownloadExcel = document.getElementById('btnDownloadExcel');
@@ -536,9 +557,9 @@
             }
 
             // ================== LÓGICA DE GRÁFICAS Y DASHBOARD ==================
-            const rawData = `{{ chart_data | safe }}`;
-            if (rawData && rawData !== 'undefined' && rawData !== '' && document.getElementById('lineChart')) {
-                try {
+            try {
+                const rawData = `{{ chart_data | safe }}`;
+                if (rawData && rawData !== 'undefined' && rawData !== '' && document.getElementById('lineChart')) {
                     const records = JSON.parse(rawData);
                     const role = "{{ role }}";
                     
@@ -601,9 +622,9 @@
                     } else {
                         if(document.getElementById('statsGrid')) document.getElementById('statsGrid').innerHTML = "<p style='color:#6B7280; font-size:13px; text-align:center; width:100%; padding:20px;'>No hay datos para generar telemetría. Realiza una sesión en el simulador para visualizar los gráficos.</p>";
                     }
-                } catch (e) {
-                    console.error("Error al procesar gráficas:", e);
                 }
+            } catch (e) {
+                console.error("Error al procesar gráficas:", e);
             }
 
             // ================== INICIALIZAR CALENDARIO (FULLCALENDAR) ==================
@@ -611,14 +632,14 @@
             let calendar;
             if (calendarEl) {
                 calendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek', // Modo responsivo automático
+                    initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek',
                     locale: 'es',
-                    slotMinTime: '08:00:00', // 8 AM
-                    slotMaxTime: '22:00:00', // 10 PM
-                    slotDuration: '00:15:00', // Bloques de 15 min
+                    slotMinTime: '08:00:00',
+                    slotMaxTime: '22:00:00',
+                    slotDuration: '00:15:00',
                     slotLabelFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' },
                     allDaySlot: false,
-                    nowIndicator: true, // Línea de tiempo real
+                    nowIndicator: true,
                     navLinks: true,
                     expandRows: true,
                     stickyHeaderDates: true,
@@ -666,7 +687,6 @@
                     }
                 });
 
-                // Renderizar cuando se hace clic en la pestaña Calendario (Soluciona bug visual de librerías)
                 document.querySelectorAll('.tab-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         if(e.currentTarget.innerText.includes('CALENDARIO')) {
@@ -675,7 +695,6 @@
                     });
                 });
 
-                // Búsqueda Rápida en Calendario
                 const searchCalendar = document.getElementById('searchCalendar');
                 if (searchCalendar) {
                     searchCalendar.addEventListener('input', (e) => {
@@ -694,7 +713,6 @@
             const editModal = document.getElementById('editModal');
             const bModal = document.getElementById('bookingModal');
             const iModal = document.getElementById('infoBookingModal');
-            const adModal = document.getElementById('adWelcomeModal');
             
             const btnOpenReg = document.getElementById('btnOpenReg');
             const btnOpenPdf = document.getElementById('btnOpenPdf');
@@ -704,7 +722,6 @@
             const btnClosePdf = document.getElementById('closePdfModal');
             const btnCloseEdit = document.getElementById('closeEditModal');
             
-            // Toggle Modals
             if(btnOpenReg) btnOpenReg.addEventListener('click', () => regModal.style.display = 'flex');
             if(btnOpenPdf) btnOpenPdf.addEventListener('click', () => pdfModal.style.display = 'flex');
             if(btnOpenEdit) btnOpenEdit.addEventListener('click', () => editModal.style.display = 'flex');
@@ -713,14 +730,12 @@
             if(btnClosePdf) btnClosePdf.addEventListener('click', () => pdfModal.style.display = 'none');
             if(btnCloseEdit) btnCloseEdit.addEventListener('click', () => editModal.style.display = 'none');
 
-            // Cierre haciendo clic fuera del modal
             window.onclick = function(event) {
                 if (event.target == regModal) regModal.style.display = "none";
                 if (event.target == pdfModal) pdfModal.style.display = "none";
                 if (event.target == editModal) editModal.style.display = "none";
                 if (bModal && event.target == bModal) bModal.style.display = "none";
                 if (iModal && event.target == iModal) iModal.style.display = "none";
-                if (adModal && event.target == adModal) adModal.style.display = "none";
             }
 
             // ================== LÓGICA MODAL ADMIN AGENDAMIENTO ==================
@@ -927,7 +942,7 @@
                 document.querySelectorAll('.data-row').forEach(row => {
                     const rawDate = row.cells[0].textContent.trim().split(' ')[0]; 
                     const parts = rawDate.split('/');
-                    const tableDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // DD/MM/YYYY a YYYY-MM-DD
+                    const tableDate = `${parts[2]}-${parts[1]}-${parts[0]}`; 
 
                     const matchDate = (!dFrom || tableDate >= dFrom) && (!dTo || tableDate <= dTo);
                     const matchID = row.cells[3].textContent.trim().toLowerCase().includes(sID);
