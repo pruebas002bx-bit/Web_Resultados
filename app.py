@@ -129,7 +129,10 @@ def dashboard():
 @app.route('/generate_pdf')
 @login_required
 def generate_pdf():
-    import json
+    import io
+    import matplotlib
+    matplotlib.use('Agg') # Obligatorio para generar gráficas en la nube sin interfaz gráfica
+    import matplotlib.pyplot as plt
     
     if session['role'] != 'partner': return "Acceso Denegado", 403
     
@@ -148,7 +151,9 @@ def generate_pdf():
         limit_from = datetime.strptime(d_from_str, '%Y-%m-%d') if d_from_str else None
         limit_to = datetime.strptime(d_to_str, '%Y-%m-%d') if d_to_str else None
         for r in all_records:
-            r_date = datetime.strptime(r.timestamp.split(' ')[0], '%d/%m/%Y')
+            # Captura correcta de la fecha si el formato viene con hora AM/PM
+            r_date_str = r.timestamp.split(' ')[0]
+            r_date = datetime.strptime(r_date_str, '%d/%m/%Y')
             if limit_from and r_date < limit_from: continue
             if limit_to and r_date > limit_to: continue
             records.append(r)
@@ -156,59 +161,41 @@ def generate_pdf():
 
     if not records: return "No hay registros para este rango.", 404
 
-    # Estadísticas
     scores = [r.score for r in records]
     avg = sum(scores)/len(scores)
-    labels = [f"Mision {i+1}" for i in range(len(records))]
-
-    # Motor de Gráfica (Doble respaldo: QuickChart -> Google Charts)
-    chart_data = None
+    
+    # --- MÉTODO LOCAL: GRÁFICA INTERNA (Matplotlib) ---
+    chart_data = io.BytesIO()
     try:
-        chart_config = {
-            "type": "line",
-            "data": {
-                "labels": labels,
-                "datasets": [{
-                    "label": "Puntaje",
-                    "data": scores,
-                    "borderColor": "#B91C1C",
-                    "backgroundColor": "rgba(185, 28, 28, 0.15)",
-                    "borderWidth": 3,
-                    "fill": True,
-                    "pointBackgroundColor": "#000000",
-                    "pointRadius": 4
-                }]
-            },
-            "options": {
-                "legend": { "display": False },
-                "scales": { 
-                    "yAxes": [{ "ticks": { "min": 0, "max": 100 } }],
-                    "xAxes": [{ "gridLines": { "display": False } }]
-                }
-            }
-        }
-        chart_res = requests.post(
-            'https://quickchart.io/chart',
-            json={"chart": chart_config, "width": 800, "height": 250, "format": "png", "backgroundColor": "white"},
-            timeout=5
-        )
-        if chart_res.status_code == 200:
-            chart_data = io.BytesIO(chart_res.content)
-        else:
-            # Respaldo a Google Charts si QuickChart falla
-            scores_str = ",".join(map(str, scores))
-            g_url = f"https://chart.googleapis.com/chart?cht=lc&chs=800x250&chd=t:{scores_str}&chco=B91C1C&chf=bg,s,FFFFFF&chxt=y&chg=20,20,1,5"
-            g_res = requests.get(g_url, timeout=5)
-            if g_res.status_code == 200:
-                chart_data = io.BytesIO(g_res.content)
+        plt.figure(figsize=(10, 3.5))
+        x_labels = [f"M{i+1}" for i in range(len(scores))]
+        
+        # Diseño Triple A: Línea roja, marcadores, relleno inferior
+        plt.plot(x_labels, scores, color='#B91C1C', marker='o', linewidth=2.5, markersize=7)
+        plt.fill_between(x_labels, scores, color='#B91C1C', alpha=0.1)
+        
+        plt.ylim(0, 105)
+        plt.ylabel("Puntaje Logrado", fontsize=10, fontweight='bold', color='#333333')
+        plt.grid(True, linestyle='--', alpha=0.4)
+        
+        # Elimina bordes feos del gráfico
+        for spine in plt.gca().spines.values():
+            spine.set_color('#DDDDDD')
+            
+        plt.tight_layout()
+        plt.savefig(chart_data, format='png', dpi=150, transparent=False)
+        plt.close()
+        chart_data.seek(0) # Clave para que el PDF pueda leer la imagen
     except Exception as e:
-        print(f"Error generando graficas: {e}")
+        print(f"Error Matplotlib: {e}")
+        chart_data = None
+    # ---------------------------------------------------
 
     class TacticPDF(FPDF):
         def header(self):
-            # FONDO BLANCO PARA EL LOGO
+            # LOGO CON FONDO BLANCO
             try: 
-                # Se descarga el logo en memoria para evitar fallos de lectura de FPDF
+                import requests
                 logo_res = requests.get('https://i.ibb.co/j9Pp0YLz/Logo-2.png', timeout=5)
                 if logo_res.status_code == 200:
                     self.image(io.BytesIO(logo_res.content), 10, 8, 40, name="logo.png")
@@ -279,6 +266,7 @@ def generate_pdf():
     pdf.cell(49, 10, f"MISIONES: {len(records)}", border=1, align='C', ln=True)
     pdf.ln(12)
 
+    # --- SECCIÓN GRÁFICA ---
     pdf.set_fill_color(0, 0, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font('helvetica', 'B', 11)
@@ -287,10 +275,11 @@ def generate_pdf():
     
     if chart_data:
         try:
-            # name="grafica.png" es crìtico para que FPDF lea BytesIO
-            pdf.image(chart_data, x=15, w=180, name="grafica.png")
+            # El atributo name="graficamatplot.png" es vital para FPDF
+            pdf.image(chart_data, x=15, w=180, name="graficamatplot.png")
             pdf.ln(2)
-        except:
+        except Exception as e:
+            print("Error imprimiendo grafica en PDF:", e)
             pdf.set_text_color(100, 100, 100)
             pdf.cell(190, 30, "[Error interno al plasmar la grafica]", border=1, align='C', ln=True)
             pdf.ln(5)
