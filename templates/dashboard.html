@@ -337,15 +337,17 @@
                     </thead>
                     <tbody id="tableBody">
                         {% for r in records %}
-                        <tr class="data-row" data-score="{{ r.score }}">
-                            <td style="font-size: 12px;">{{ r.timestamp }}</td>
-                            <td>{{ r.sim_id }}</td>
-                            <td><span class="badge-group">{{ r.group_name }}</span></td>
-                            <td>{{ r.shooter_id }}</td>
-                            <td>{{ r.shooter_name | upper }}</td>
-                            <td>{{ r.scenario }}</td>
-                            <td><span class="badge-score">{{ r.score }}</span></td>
-                        </tr>
+                            {% if r.shooter_name | upper != 'TIRADOR' %}
+                            <tr class="data-row" data-score="{{ r.score }}">
+                                <td style="font-size: 12px;">{{ r.timestamp }}</td>
+                                <td>{{ r.sim_id }}</td>
+                                <td><span class="badge-group">{{ r.group_name }}</span></td>
+                                <td>{{ r.shooter_id }}</td>
+                                <td>{{ r.shooter_name | upper }}</td>
+                                <td>{{ r.scenario }}</td>
+                                <td><span class="badge-score">{{ r.score }}</span></td>
+                            </tr>
+                            {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
